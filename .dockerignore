@@ -1,0 +1,19 @@
+# Ignore local database and logs
+pb_data/
+*.db
+*.db-shm
+*.db-wal
+
+# Ignore system and git files
+.git/
+.gitignore
+Dockerfile
+dockerfile
+README.md
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore Node/Build artifacts (if any)
+node_modules/
