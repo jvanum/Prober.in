@@ -96,7 +96,6 @@ const dataService = {
 
 
 
-// Replaces sbClient.channel('...').subscribe()
 pb.collection('messages').subscribe('*', function (e) {
     const currentUser = pb.authStore.record;
     
@@ -512,20 +511,22 @@ function setMenuCategory(c){currentCategory=c;document.querySelectorAll('.catego
 function handleSwipeCategory(d){const c=['Vegetarian','Vegan','Non Vegetarian','Beverage'];const isVeg=document.getElementById('header-veg-toggle')?.checked;const a=isVeg?c.filter(x=>x!=='Non Vegetarian'):c;let i=a.indexOf(currentCategory);i=(d==='left')?(i+1)%a.length:(i-1+a.length)%a.length;setMenuCategory(a[i])}
 
 async function fetchBuilderData() {
-    const { data, error } = await sbClient
-        .from('menu_items')
-        .select('*')
-        .in('category', ['Base', 'Protein', 'Fat'])
-        .eq('is_available', true);
+    try {
+        // PocketBase combines .in() and .eq() into one filter string
+        const records = await pb.collection('menu_items').getFullList({
+            filter: '(category = "Base" || category = "Protein" || category = "Fat") && is_available = true'
+        });
 
-    if (error) return;
-
-    // Sort into categories
-    fetchedBuilderData.bases = data.filter(i => i.category === 'Base');
-    fetchedBuilderData.proteins = data.filter(i => i.category === 'Protein');
-    fetchedBuilderData.fats = data.filter(i => i.category === 'Fat');
-    
-    renderMealBuilder();
+        // Sort into categories using the fetched records
+        fetchedBuilderData.bases = records.filter(i => i.category === 'Base');
+        fetchedBuilderData.proteins = records.filter(i => i.category === 'Protein');
+        fetchedBuilderData.fats = records.filter(i => i.category === 'Fat');
+        
+        renderMealBuilder();
+    } catch (err) {
+        console.error("Builder Fetch Error:", err);
+        // Optional: showToast("Failed to load meal builder components.");
+    }
 }
 
 function selectBuilderItem(category, id) {
@@ -703,31 +704,31 @@ function calculateBMI() {
 
     // Save record to Supabase (which triggers the History rendering)
     saveBmiHistory(bmi, category, heightCm.toFixed(1), weightKg.toFixed(1));    
+
+    // Calculate Protein Goal (Standard 1.8g to 2.2g per kg for active adults)
+const proteinGoalMin = Math.round(weightKg * 1.8);
+const proteinGoalMax = Math.round(weightKg * 2.2);
+
+const proteinDisplay = document.createElement('p');
+proteinDisplay.style.cssText = "color: var(--brand-green); font-weight: 800; margin-top: 10px; font-size: 0.9rem;";
+proteinDisplay.innerHTML = `<i class="fas fa-dumbbell"></i> Daily Protein Goal: ${proteinGoalMin}g - ${proteinGoalMax}g`;
+
+const scoreCard = document.querySelector('.bmi-score-card');
+if (scoreCard) scoreCard.appendChild(proteinDisplay);
 }
 
-// --- DATABASE HISTORY LOGIC ---
 async function saveBmiHistory(bmi, category, height, weight) {
-    const { data: { session } } = await sbClient.auth.getSession();
-    
-    if (!session) {
-        showToast("Log in to save this to your BMI history!");
-        return; // Stops here if they are a guest
+    if (!pb.authStore.isValid) {
+        showToast("Log in to save history!");
+        return;
     }
-
-    const { error } = await sbClient.from('bmi_history').insert([{
-        user_id: session.user.id,
-        height: height,
-        weight: weight,
-        bmi: bmi,
-        category: category
-    }]);
-
-    if (error) {
-        console.error("Error saving BMI:", error);
-        showToast("Could not save BMI. Check your connection.");
-    } else {
-        renderBmiHistory(); // Refresh the list instantly
-    }
+    try {
+        await pb.collection('bmi_history').create({
+            user_id: pb.authStore.record.id,
+            height, weight, bmi, category
+        });
+        renderBmiHistory();
+    } catch (err) { showToast("Failed to save BMI."); }
 }
 
 async function renderBmiHistory() {
@@ -736,49 +737,60 @@ async function renderBmiHistory() {
     
     if (!container || !listEl) return;
 
-    const { data: { session } } = await sbClient.auth.getSession();
-    
-    if (!session) {
+    // 1. POCKETBASE AUTH CHECK
+    if (!pb.authStore.isValid) {
         container.style.display = 'none';
         return;
     }
 
-    const { data, error } = await sbClient
-        .from('bmi_history')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
+    try {
+        // 2. POCKETBASE FETCH LOGIC
+        // getList(page, perPage, options)
+        const resultList = await pb.collection('bmi_history').getList(1, 5, {
+            filter: `user_id = "${pb.authStore.record.id}"`,
+            sort: '-created', // PocketBase uses '-' for descending
+        });
 
-    if (error || !data || data.length === 0) {
-        container.style.display = 'none';
-        return;
-    }
+        const records = resultList.items;
 
-    listEl.innerHTML = data.map(record => {
-        const date = new Date(record.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+        if (records.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        // 3. RENDERING THE CARDS
+        listEl.innerHTML = records.map(record => {
+            // PocketBase uses 'created' (e.g., "2022-01-01 10:00:00.123Z")
+            const date = new Date(record.created).toLocaleDateString('en-IN', { 
+                day: 'numeric', 
+                month: 'short' 
+            });
+            
+            let catColor = 'var(--text-muted)';
+            if (record.category.includes('Normal')) catColor = 'var(--brand-green)';
+            if (record.category.includes('Overweight')) catColor = '#f97316'; 
+            if (record.category.includes('Underweight')) catColor = '#3b82f6'; 
+
+            return `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 16px 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <div style="font-weight: 700; font-size: 1rem; color: var(--text-main);">${date}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">${record.weight}kg • ${record.height}cm</div>
+                </div>
+                <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                    <div style="font-size: 1.6rem; font-weight: 800; color: var(--text-main); line-height: 1;">${record.bmi}</div>
+                    <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: ${catColor};">${record.category.split(' ')[0]}</div>
+                </div>
+            </div>
+            `;
+        }).join('');
         
-        // Dynamic color coding for the category text
-        let catColor = 'var(--text-muted)';
-        if (record.category.includes('Normal')) catColor = 'var(--brand-green)';
-        if (record.category.includes('Overweight')) catColor = '#f97316'; // Orange
-        if (record.category.includes('Underweight')) catColor = '#3b82f6'; // Blue
+        container.style.display = 'block';
 
-        return `
-        <div style="display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 16px 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-                <div style="font-weight: 700; font-size: 1rem; color: var(--text-main);">${date}</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">${record.weight}kg • ${record.height}cm</div>
-            </div>
-            <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
-                <div style="font-size: 1.6rem; font-weight: 800; color: var(--text-main); line-height: 1;">${record.bmi}</div>
-                <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: ${catColor};">${record.category.split(' ')[0]}</div>
-            </div>
-        </div>
-        `;
-    }).join('');
-    
-    container.style.display = 'block';
+    } catch (err) {
+        console.error("BMI History Load Error:", err);
+        container.style.display = 'none';
+    }
 }
 
 async function loadChat() {
@@ -947,56 +959,60 @@ async function loadAdminChat() {
     
     if (!listContainer) return;
     
-    // Reset view to show inbox, hide chat window
+    // UI Reset
     listContainer.style.display = 'flex'; 
     listContainer.style.flexDirection = 'column';
     listContainer.innerHTML = '<div class="spinner"></div>';
     if (windowContainer) windowContainer.style.display = 'none';
 
-    // Fetch all messages to build the inbox list
-    const { data, error } = await sbClient
-        .from('messages')
-        .select('*')
-        .order('created_at', { ascending: false });
+    try {
+        // 1. POCKETBASE FETCH: Get all messages sorted by newest first
+        // Replaces sbClient.from().select().order()
+        const data = await pb.collection('messages').getFullList({
+            sort: '-created' // PocketBase uses '-' for descending
+        });
 
-    if (error || !data) {
-        listContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted);">Error loading messages.</p>';
-        return;
-    }
+        // 2. Group messages by unique users (logic remains similar)
+        const uniqueUsers = {};
+        data.forEach(msg => {
+            if (msg.user_id && !uniqueUsers[msg.user_id]) {
+                uniqueUsers[msg.user_id] = {
+                    userId: msg.user_id,
+                    userName: msg.sender_name || 'Customer',
+                    lastMessage: msg.message,
+                    time: new Date(msg.created).toLocaleDateString('en-IN', { 
+                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                    })
+                };
+            }
+        });
 
-    // Group messages by unique users
-    const uniqueUsers = {};
-    data.forEach(msg => {
-        if (msg.user_id && !uniqueUsers[msg.user_id]) {
-            uniqueUsers[msg.user_id] = {
-                userId: msg.user_id,
-                userName: msg.sender_name || 'Customer',
-                lastMessage: msg.message,
-                time: new Date(msg.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-            };
+        const usersArray = Object.values(uniqueUsers);
+
+        if (usersArray.length === 0) {
+            listContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted);">No support messages yet.</p>';
+            return;
         }
-    });
 
-    const usersArray = Object.values(uniqueUsers);
+        // 3. Render the Inbox Cards
+        listContainer.innerHTML = usersArray.map(u => `
+            <div onclick="openAdminChat('${u.userId}', '${u.userName.replace(/'/g, "\\'")}')" class="admin-inbox-card" style="background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 12px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; box-shadow: var(--shadow-sm); transition: transform 0.2s;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 700; color: var(--text-main); font-size: 1.05rem;">${u.userName}</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">${u.time}</span>
+                </div>
+                <div style="font-size: 0.9rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    ${u.lastMessage}
+                </div>
+            </div>
+        `).join('');
 
-    if (usersArray.length === 0) {
-        listContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted);">No support messages yet.</p>';
-        return;
+    } catch (err) {
+        console.error("Admin Inbox Error:", err);
+        listContainer.innerHTML = '<p style="text-align: center; color: #ef4444;">Error loading messages.</p>';
     }
-
-    // Render the Inbox Cards
-    listContainer.innerHTML = usersArray.map(u => `
-        <div onclick="openAdminChat('${u.userId}', '${u.userName.replace(/'/g, "\\'")}')" style="background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 12px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; box-shadow: var(--shadow-sm); transition: transform 0.2s;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 700; color: var(--text-main); font-size: 1.05rem;">${u.userName}</span>
-                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">${u.time}</span>
-            </div>
-            <div style="font-size: 0.9rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                ${u.lastMessage}
-            </div>
-        </div>
-    `).join('');
 }
+
 
 async function openAdminChat(userId, userName) {
     const windowEl = document.getElementById('admin-chat-window');
@@ -1009,23 +1025,34 @@ async function openAdminChat(userId, userName) {
     listEl.style.display = 'none';
     windowEl.style.display = 'flex';
     
-    const { data } = await sbClient.from('messages')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true });
+    try {
+        // 1. POCKETBASE FETCH: Get messages for this specific user
+        // Replaces sbClient.from().select().eq().order()
+        const data = await pb.collection('messages').getFullList({
+            filter: `user_id = "${userId}"`, // PocketBase filter syntax
+            sort: 'created' // Ascending order (oldest to newest)
+        });
 
-    container.innerHTML = data.map(m => {
-        const isAdmin = m.sender_role === 'admin';
-        return `<div class="message-bubble ${isAdmin ? 'message-user' : 'message-admin'}">
-            ${m.message}
-        </div>`;
-    }).join('');
-    
-    // Auto scroll to bottom
-    setTimeout(() => {
-        container.scrollTop = container.scrollHeight;
-    }, 50);
+        // 2. Render Message Bubbles
+        container.innerHTML = data.map(m => {
+            const isAdmin = m.sender_role === 'admin';
+            return `<div class="message-bubble ${isAdmin ? 'message-admin' : 'message-user'}">
+                ${m.message}
+            </div>`;
+        }).join('');
+        
+        // 3. Auto scroll to bottom
+        setTimeout(() => {
+            container.scrollTop = container.scrollHeight;
+        }, 50);
+
+    } catch (err) {
+        console.error("Chat Thread Error:", err);
+        container.innerHTML = '<p>Error loading conversation.</p>';
+    }
 }
+
+
 
 function closeAdminChat() {
     currentAdminChatUserId = null;
@@ -1033,19 +1060,32 @@ function closeAdminChat() {
 }
 
 async function sendAdminReply() {
+    // 1. Safety Check: Is a chat actually open?
     if (!currentAdminChatUserId) return;
+
     const input = document.getElementById('admin-reply-input');
     const text = input.value.trim();
     if (!text) return;
 
-    await sbClient.from('messages').insert([{
-        user_id: currentAdminChatUserId,
-        message: text,
-        sender_role: 'admin'
-    }]);
-    
-    input.value = '';
-    openAdminChat(currentAdminChatUserId, document.getElementById('admin-chat-customer-name').innerText);
+    try {
+        // 2. POCKETBASE CREATE LOGIC
+        await pb.collection('messages').create({
+            user_id: currentAdminChatUserId,
+            message: text,
+            sender_role: 'admin',
+            sender_name: 'Prober Support' // Adding a name for professional touch
+        });
+
+        // 3. Clear UI and Refresh
+        input.value = '';
+        
+        // Reloads the window with the new message visible
+        openAdminChat(currentAdminChatUserId, document.getElementById('admin-chat-customer-name').innerText);
+        
+    } catch (err) {
+        console.error("Admin Reply Error:", err);
+        showToast("Failed to send reply. Check connection.");
+    }
 }
 
 // --- 3. TAB & UTILITY LOGIC ---
@@ -1094,59 +1134,30 @@ function clearPreview() {
 }
 
 
-
-
-
 async function loadOrders() {
     const activeList = document.getElementById('active-orders-list');
     const recentList = document.getElementById('recent-orders-list');
-    
-    if (!activeList || !recentList) return;
+    if (!activeList || !recentList || !pb.authStore.isValid) return;
 
-    // Show loading state
-    activeList.innerHTML = '<div class="spinner"></div>';
-    recentList.innerHTML = '';
+    try {
+        const orders = await pb.collection('orders').getFullList({
+            filter: `user_id = "${pb.authStore.record.id}"`,
+            sort: '-created',
+            expand: 'order_items_via_order_id' // This fetches items linked to the order
+        });
 
-    const { data: { session } } = await sbClient.auth.getSession();
-    if (!session) return;
+        const activeOrders = orders.filter(o => ['Pending', 'Preparing', 'Out for Delivery'].includes(o.status));
+        const recentOrders = orders.filter(o => ['Delivered', 'Cancelled'].includes(o.status));
 
-    // Fetch orders and join with order_items
-    const { data: orders, error } = await sbClient
-        .from('orders')
-        .select(`
-            *,
-            order_items (*)
-        `)
-        .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error("Error loading orders:", error);
-        activeList.innerHTML = '<p style="color:var(--text-muted);">Error loading orders.</p>';
-        return;
-    }
-
-    // Categorize orders
-    const activeOrders = orders.filter(o => ['Pending', 'Preparing', 'Out for Delivery'].includes(o.status));
-    const recentOrders = orders.filter(o => ['Delivered', 'Cancelled'].includes(o.status));
-
-    // Render Active Orders
-    if (activeOrders.length > 0) {
-        activeList.innerHTML = activeOrders.map(o => renderOrderCard(o)).join('');
-    } else {
-        activeList.innerHTML = '<p style="color:var(--text-muted); padding: 10px;">No active orders right now.</p>';
-    }
-
-    // Render Recent History
-    if (recentOrders.length > 0) {
-        recentList.innerHTML = recentOrders.map(o => renderOrderCard(o)).join('');
-    } else {
-        recentList.innerHTML = '<p style="color:var(--text-muted); padding: 10px;">No previous orders found.</p>';
-    }
+        activeList.innerHTML = activeOrders.length ? activeOrders.map(o => renderOrderCard(o)).join('') : '<p>No active orders.</p>';
+        recentList.innerHTML = recentOrders.length ? recentOrders.map(o => renderOrderCard(o)).join('') : '<p>No past orders.</p>';
+    } catch (err) { console.error("Order Load Error", err); }
 }
 
+
+
 function renderOrderCard(order) {
-    const date = new Date(order.created_at).toLocaleDateString('en-IN', { 
+    const date = new Date(order.created).toLocaleDateString('en-IN', { 
         day: 'numeric', 
         month: 'short',
         hour: '2-digit',
@@ -1240,6 +1251,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             spinner.style.display = 'none';
         }
     }
+
+    // Automatically refresh the Admin UI when any menu item is changed
+pb.collection('menu_items').subscribe('*', function (e) {
+    if (window.location.hash === '#admin') {
+        renderAdminMenu(); 
+    }
+});
 });
 
 // --- 2. SCREEN NAVIGATION ---
@@ -1330,3 +1348,20 @@ document.addEventListener('touchend', e => {
 }, {passive: true});
 
 
+// Listen for new orders live!
+pb.collection('orders').subscribe('*', function (e) {
+    if (e.action === 'create') {
+        // 1. Play the notification sound from your assets folder
+        const audio = new Audio('assets/notification.mp3');
+        audio.play().catch(err => console.log("Audio blocked by browser"));
+
+        // 2. Show a toast with the total price
+        showToast(`New Order Received: ₹${e.record.total_price}!`);
+
+        // 3. Vibrate your Motorola Edge 60 Pro
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+        // 4. Refresh the orders list if the user is on that screen
+        if (window.location.hash === '#orders') loadOrders();
+    }
+});
