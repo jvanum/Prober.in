@@ -11,18 +11,16 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/app.css">
-    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="app.css">
+    <link rel="manifest" href="manifest.json">
 </head>
 <body>
 
     <header class="app-header">
         <div class="brand" onclick="switchScreen('home')" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
-            <div style="background: var(--brand-green); color: white; width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; border-radius: 8px; box-shadow: 0 4px 10px rgba(34, 197, 94, 0.3);">
-                <i class="fas fa-seedling" style="font-size: 1rem;"></i>
-            </div>
-            PROBER
-        </div>
+    <img src="icons/icon-192.png" style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover;" alt="Prober Logo">
+    PROBER
+</div>
         
         <div class="header-controls">
             <div style="position: relative;">
@@ -93,8 +91,6 @@
                 <div class="carousel-container" id="hero-carousel">
                     <div class="carousel-track" id="carousel-track">
                        <img src="assets/coming-soon.jpg" class="carousel-img" alt="Starting soon in Kurmannapalem">
-                        <img src="assets/coming-soon.jpg" class="carousel-img" alt="Salad">
-                        <img src="assets/coming-soon.jpg" class="carousel-img" alt="Burger">
                     </div>
                     <button class="carousel-btn left" onclick="moveCarousel(-1)"><i class="fas fa-chevron-left"></i></button>
                     <button class="carousel-btn right" onclick="moveCarousel(1)"><i class="fas fa-chevron-right"></i></button>
@@ -423,9 +419,9 @@
                     </div>
                 </div>                
        
-<div class="phone-input-wrapper" id="email-wrapper">
+<div class="phone-input-wrapper" id="checkout-email-wrapper">
     <span class="country-code"><i class="fas fa-envelope"></i></span>
-    <input type="email" id="auth-email" placeholder="hello@example.com">
+    <input type="email" id="checkout-email" placeholder="hello@example.com">
 </div>
                 
                 <input type="text" id="auth-otp" placeholder="Enter 4-digit OTP" maxlength="4" class="otp-input" style="display: none;">
@@ -475,51 +471,29 @@
     </button>
     </nav>
 
-    <div id="checkout-modal" class="overlay hidden" style="display: flex; align-items: center; justify-content: center; z-index: 1000;">
+<div id="checkout-modal" class="overlay hidden" style="display: flex; align-items: center; justify-content: center; z-index: 1000;">
     <div class="form-container" style="width: 90%; max-width: 400px; animation: fadeUp 0.3s ease;">
         <h3 style="margin-bottom: 8px;">Delivery Details</h3>
-        <p style="margin-bottom: 20px; font-size: 0.9rem;">Enter your number to confirm your order.</p>
+        <p style="margin-bottom: 20px; font-size: 0.9rem;">Enter your email to confirm your order.</p>
         
-   
-
-<div class="phone-input-wrapper" id="email-wrapper">
-    <span class="country-code"><i class="fas fa-envelope"></i></span>
-    <input type="email" id="auth-email" placeholder="hello@example.com">
-</div>
+        <div class="phone-input-wrapper" id="checkout-email-wrapper" style="margin-bottom: 20px;">
+            <span class="country-code"><i class="fas fa-envelope"></i></span>
+            <input type="email" id="checkout-email" placeholder="hello@example.com">
+        </div>
 
         <div style="display: flex; gap: 12px;">
             <button class="btn-outline" onclick="toggleCheckoutModal()" style="flex: 1; border-color: var(--text-muted); color: var(--text-muted);">Cancel</button>
             <button class="btn-large" onclick="processCheckout()" style="flex: 2;">Confirm Order</button>
         </div>
+    </div> 
+</div> 
 
-    <div id="item-modal" style="display:none;">
-  <h2 id="modal-name"></h2>
-  <p id="modal-price"></p>
-  <button id="modal-add-btn">Add to Cart</button>
-  <button onclick="document.getElementById('item-modal').style.display='none'">Close</button>
-    </div>
-
-    <div id="cart-sidebar" style="
-  position: fixed;
-  top: 0;
-  right: -100%;
-  width: 300px;
-  height: 100%;
-  background: white;
-  transition: 0.3s;
-">
-  <button id="close-cart">Close</button>
-  <div id="cart-items"></div>
-  <div>Total: <span id="cart-total-price"></span></div>
-    </div>
-
-    <div id="loading-spinner" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 9999; background: var(--bg-light);">
+<div id="loading-spinner" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 9999; background: var(--bg-light);">
     <div class="spinner"></div>
-    </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.22.0/dist/pocketbase.umd.js"></script>
-    <script src="app.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/pocketbase@0.22.0/dist/pocketbase.umd.js"></script>
+<script src="app.js"></script>
 
 </body>
 </html>

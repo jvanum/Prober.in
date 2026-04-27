@@ -1,114 +1,82 @@
-
-// This automatically detects if it's running on Railway or localhost
-const pb = new PocketBase(window.location.origin);
+// --- BACKEND CONNECTION SETUP ---
+const pb = new PocketBase('http://127.0.0.1:8090'); // Change for production
 
 let isOtpSent = false;
 let currentCategory = 'Vegetarian';
-// This checks memory first. If empty, it defaults to an empty array []
 let cart = JSON.parse(localStorage.getItem('prober_cart')) || [];
-let currentUserPhone = null;
 let adminItemsData = [];
 let currentAdminCategory = 'All';
-let isLoginMode = true;
 let currentSlide = 0;
 let fetchedBuilderData = { bases: [], proteins: [], fats: [] }; 
 let currentBuild = { base: null, protein: null, fat: null };    
+let currentOtpId = null; 
 
+// --- SESSION & AUTH ---
 function checkUserSession() {
     const isAuth = pb.authStore.isValid;
     const user = pb.authStore.record; 
-
-    // We removed the code that forcefully showed/hid the auth screen here.
-    // Now, the auth screen will ONLY show when switchScreen('auth') is called via the menu!
-
     if (!isAuth) {
         localStorage.removeItem('prober_cart');
-        if (typeof updateAuthUI === 'function') updateAuthUI(null);
+        updateAuthUI(null);
     } else {
-        if (typeof updateAuthUI === 'function') updateAuthUI(user);
+        updateAuthUI(user);
     }
 }
-// Replace the auth listener:
-pb.authStore.onChange((token, model) => {
-    checkUserSession();
-});
 
-// Replace logout:
+pb.authStore.onChange(() => checkUserSession());
+
 function handleLogout() {
-    pb.authStore.clear(); // Logs the user out instantly
-    showToast("You have been logged out.");
+    pb.authStore.clear();
+    showToast("Logged out.");
     if (document.getElementById('side-menu-panel').classList.contains('open')) toggleMenu();
     switchScreen('home'); 
 }
 
-
 function updateAuthUI(user) {
     const loginBtn = document.getElementById('login-menu-btn');
     const logoutBtn = document.getElementById('logout-menu-btn');
+    const adminBtn = document.getElementById('admin-menu-btn');
     
     if (user) {
-        // Logged in
         loginBtn.innerHTML = `<i class="fas fa-user-circle fa-fw"></i> ${user.name || user.email}`;
-        loginBtn.onclick = null; // Remove login redirect
+        loginBtn.onclick = null;
         logoutBtn.style.display = 'block';
+        if (user.email === 'jvanum@gmail.com') adminBtn.style.display = 'flex';
     } else {
-        // Logged out
         loginBtn.innerHTML = `<i class="fas fa-user-circle fa-fw"></i> Login / Signup`;
         loginBtn.onclick = () => { switchScreen('auth'); toggleMenu(); };
         logoutBtn.style.display = 'none';
+        adminBtn.style.display = 'none';
     }
 }
-let currentOtpId = null; // Stores the OTP session
 
 async function handleAuthSubmit() {
     const emailInput = document.getElementById('auth-email');
     const otpInput = document.getElementById('auth-otp');
-    const emailRaw = emailInput.value.trim();
-
-    if (!emailRaw) {
-        showToast("Please enter your email.");
-        return;
-    }
+    const email = emailInput.value.trim();
 
     if (!isOtpSent) {
-        // STEP 1: Request OTP
         try {
-            const result = await pb.collection('users').requestOTP(emailRaw);
-            currentOtpId = result.otpId; 
-            
-            showToast("OTP sent to your email!");
+            const res = await pb.collection('users').requestOTP(email);
+            currentOtpId = res.otpId;
             isOtpSent = true;
-            
             document.getElementById('email-wrapper').style.display = 'none';
-            otpInput.style.display = 'block';                
+            otpInput.style.display = 'block';
             document.getElementById('auth-submit-btn').innerText = 'Verify OTP';
-        } catch (err) {
-            showToast("Error sending OTP. Is it enabled in PocketBase?");
-            console.error(err);
-        }
+            showToast("OTP sent!");
+        } catch (err) { showToast("Error sending OTP."); }
     } else {
-        // STEP 2: Verify OTP
-        const otp = otpInput.value.trim();
         try {
-            const authData = await pb.collection('users').authWithOTP(currentOtpId, otp);
-            
-            showToast("Welcome to Prober!");
-            updateAuthUI(pb.authStore.record); // Update UI with user data
+            await pb.collection('users').authWithOTP(currentOtpId, otpInput.value.trim());
+            showToast("Welcome!");
             switchScreen('home');
-            
-            // Reset form for next time
             isOtpSent = false;
-            otpInput.value = '';
-            emailInput.value = '';
-            document.getElementById('email-wrapper').style.display = 'flex';
-            otpInput.style.display = 'none';
-            document.getElementById('auth-submit-btn').innerText = 'Login';
-        } catch (err) {
-            showToast("Invalid OTP. Please try again.");
-            console.error(err);
-        }
+        } catch (err) { showToast("Invalid OTP."); }
     }
 }
+
+
+
 
 const dataService = {
     getMenu: async () => {
@@ -814,60 +782,35 @@ async function renderBmiHistory() {
 }
 
 async function loadChat() {
-    const container = document.getElementById('chat-messages');
-    if (!container) return;
-
-    const { data: { session } } = await sbClient.auth.getSession();
-    if (!session) return;
-
-    const { data, error } = await sbClient.from('messages')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('created_at', { ascending: true });
-
-    if (error) {
-        console.error("Chat fetch error:", error);
-        return;
-    }
-
-    // Render messages with better structure
-    container.innerHTML = data.map(m => `
-        <div class="message-bubble ${m.sender_role === 'admin' ? 'message-admin' : 'message-user'}">
-            ${m.message}
-        </div>
-    `).join('');
-    
-    // Crucial: Scroll to the bottom so the newest message is visible
-    setTimeout(() => {
-        container.scrollTop = container.scrollHeight;
-    }, 50);
+    if (!pb.authStore.isValid) return;
+    try {
+        const msgs = await pb.collection('messages').getFullList({
+            filter: `user_id = "${pb.authStore.record.id}"`,
+            sort: 'created'
+        });
+        document.getElementById('chat-messages').innerHTML = msgs.map(m => `
+            <div class="message-bubble ${m.sender_role === 'admin' ? 'message-admin' : 'message-user'}">
+                ${m.message}
+            </div>
+        `).join('');
+    } catch (err) { console.error("Chat Error", err); }
 }
 
 async function sendMessage() {
     const input = document.getElementById('chat-input');
-    const message = input.value.trim();
-    if (!message) return;
-
-    const { data: { session } } = await sbClient.auth.getSession();
-    if (!session) return;
-
-    // FIX: Try metadata first, then local storage, then fallback
-    const phone = session.user.phone?.replace('+91', '');
-    const savedName = localStorage.getItem('prober_user_' + phone);
-    const customerName = session.user.user_metadata?.full_name || savedName || 'Customer';
+    const msg = input.value.trim();
+    if (!msg || !pb.authStore.isValid) return;
 
     try {
-        await sbClient.from('messages').insert([{
-            user_id: session.user.id,
-            sender_name: customerName, // Ensures name is attached to every message
-            message: message,
-            sender_role: 'user'
-        }]);
+        await pb.collection('messages').create({
+            user_id: pb.authStore.record.id,
+            message: msg,
+            sender_role: 'user',
+            sender_name: pb.authStore.record.name || 'Customer'
+        });
         input.value = '';
         loadChat();
-    } catch (err) {
-        showToast("Failed to send message.");
-    }
+    } catch (err) { showToast("Failed to send."); }
 }
 
 
@@ -877,23 +820,41 @@ function triggerNotification(){if(navigator.vibrate)navigator.vibrate(200);new A
 // Global variable to hold the selected image file
 let selectedFileForUpload = null;
 
-// --- 1. ADMIN MENU RENDERING (STATUS & DELETE TABS) ---
+
 async function renderAdminMenu() {
-    const { data: { session } } = await sbClient.auth.getSession();
-    if (!session) return;
+    if (!pb.authStore.isValid) return;
+    try {
+        const records = await pb.collection('menu_items').getFullList({ sort: 'name' });
+        adminItemsData = records;
+        updateAdminView(currentAdminCategory || 'All');
+    } catch (err) { console.error("Admin Load Error", err); }
+}
 
-    const { data, error } = await sbClient
-        .from('menu_items')
-        .select('*')
-        .order('id', { ascending: true });
+async function updateItemAvailability(itemId, isAvailable) {
+    try {
+        await pb.collection('menu_items').update(itemId, { is_available: isAvailable });
+        renderAdminMenu(); 
+        renderMenu();
+    } catch (err) { showToast("Update failed"); }
+}
 
-    if (error) {
-        console.error("Admin Load Error:", error);
-        return;
-    }
+async function handleAddItem(event) {
+    event.preventDefault();
+    const formData = new FormData();
+    formData.append('name', document.getElementById('add-name').value);
+    formData.append('category', document.getElementById('add-category').value);
+    formData.append('price', parseFloat(document.getElementById('add-price').value));
+    formData.append('is_available', true);
+    
+    if (selectedFileForUpload) formData.append('img', selectedFileForUpload);
 
-    adminItemsData = data; 
-    updateAdminView(currentAdminCategory || 'All');
+    try {
+        await pb.collection('menu_items').create(formData);
+        showToast("Dish published!");
+        event.target.reset();
+        clearPreview();
+        renderAdminMenu();
+    } catch (err) { showToast("Error adding dish."); }
 }
 
 // Replace your existing updateAdminView function in app.js with this:
@@ -951,19 +912,7 @@ function updateAdminView(category) {
     }
 }
 
-async function updateItemAvailability(itemId, isAvailable) {
-    const { error } = await sbClient
-        .from('menu_items')
-        .update({ is_available: isAvailable })
-        .eq('id', itemId);
 
-    if (error) {
-        showToast("Update failed");
-        renderAdminMenu(); 
-    } else {
-        renderMenu(); // Keep main menu in sync
-    }
-}
 
 async function deleteMenuItem(id, name) {
     // 1. Basic check: Is a user even logged in?
@@ -1379,27 +1328,5 @@ document.addEventListener('touchend', e => {
         }
     }
 }, {passive: true});
-// The extra '}' that was here has been removed.
 
-async function handleAddItem(event) {
-    event.preventDefault();
-    
-    const name = document.getElementById('add-name').value;
-    const category = document.getElementById('add-category').value;
-    const price = parseFloat(document.getElementById('add-price').value);
-    
-    // This now saves to PocketBase instead of Supabase
-    try {
-        await pb.collection('menu_items').create({
-            name: name,
-            category: category,
-            price: price,
-            is_available: true
-        });
-        showToast("Dish published!");
-        event.target.reset();
-        renderAdminMenu();
-    } catch (err) {
-        showToast("Error adding dish.");
-    }
-}
+
