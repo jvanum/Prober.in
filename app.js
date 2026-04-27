@@ -1,9 +1,5 @@
 // --- BACKEND CONNECTION SETUP ---
-// Change for local
-// const pb = new PocketBase('http://127.0.0.1:8090'); 
-
-// Change for production
-const pb = new PocketBase('https://proberin-production.up.railway.app');
+const pb = new PocketBase('http://127.0.0.1:8090'); // Change for production
 
 let isOtpSent = false;
 let currentCategory = 'Vegetarian';
@@ -55,25 +51,30 @@ function updateAuthUI(user) {
 }
 
 async function handleAuthSubmit() {
-    const email = document.getElementById('auth-email').value.trim();
-    const password = document.getElementById('auth-password').value.trim();
+    const emailInput = document.getElementById('auth-email');
+    const otpInput = document.getElementById('auth-otp');
+    const email = emailInput.value.trim();
 
-    if (!email || !password) {
-        showToast("Please enter both email and password.");
-        return;
-    }
-
-    try {
-        // Authenticate using Email and Password
-        await pb.collection('users').authWithPassword(email, password);
-        
-        showToast("Welcome back!");
-        switchScreen('home');
-    } catch (err) {
-        console.error("Login Error:", err);
-        showToast("Invalid email or password.");
+    if (!isOtpSent) {
+        try {
+            const res = await pb.collection('users').requestOTP(email);
+            currentOtpId = res.otpId;
+            isOtpSent = true;
+            document.getElementById('email-wrapper').style.display = 'none';
+            otpInput.style.display = 'block';
+            document.getElementById('auth-submit-btn').innerText = 'Verify OTP';
+            showToast("OTP sent!");
+        } catch (err) { showToast("Error sending OTP."); }
+    } else {
+        try {
+            await pb.collection('users').authWithOTP(currentOtpId, otpInput.value.trim());
+            showToast("Welcome!");
+            switchScreen('home');
+            isOtpSent = false;
+        } catch (err) { showToast("Invalid OTP."); }
     }
 }
+
 
 
 
