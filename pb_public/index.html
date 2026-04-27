@@ -83,6 +83,13 @@
                         <li>🥦 <strong>High Fiber</strong> to heal the Gut.</li>
                         <li>💧 <strong>Healthy Fats</strong> from Ghee, Olive and Sesame Oil.</li>
                     </ul>
+                    <div class="mission-card" style="margin-top: 20px; padding: 16px; background: rgba(16, 185, 129, 0.05); border-radius: 16px; border: 1px dashed var(--brand-green);">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+        <i class="fas fa-paw" style="color: var(--brand-green);"></i>
+        <span style="font-weight: 800; font-size: 0.9rem; color: var(--text-main); text-transform: uppercase;">Our Bigger Mission</span>
+    </div>
+    <p style="font-size: 0.85rem; line-height: 1.4;">Every meal you order helps us get one step closer to establishing a permanent sanctuary for stray dogs and cats. We're currently fostering rescues right here in Visakhapatnam.</p>
+</div>
                     <button class="btn-large" style="width: 100%; margin-top: 10px;" onclick="switchScreen('menu')">View Menu</button>
                 </div>
             </div>
@@ -186,6 +193,13 @@
                     </div>
                 </div>
 
+
+
+                <div class="form-container" style="margin-top: 20px; background: rgba(16, 185, 129, 0.05); border: 1px dashed var(--brand-green);">
+    <h3 style="font-size: 0.95rem; margin-bottom: 8px;">Quick Macro Check</h3>
+    <p style="font-size: 0.8rem; margin-bottom: 12px;">Ensure you're hitting your 2g/kg protein goal for today.</p>
+    <button class="btn-outline" style="padding: 10px; font-size: 0.85rem;" onclick="showToast('Feature coming soon: Protein Logging!')">Log Protein</button>
+</div>
                 <div id="bmi-recommendations-container" style="display: none;">
                     <div style="margin-bottom: 16px;">
     <h3 style="margin: 0;">Recommended for You</h3>
@@ -314,7 +328,19 @@
     <button class="menu-row-btn" onclick="switchScreen('chat-screen'); loadChat(); toggleMenu();">
     <i class="fas fa-comments fa-fw"></i>Contact Support
 </button>
+    <div style="margin-top: 20px; padding: 16px; border-top: 1px solid var(--border-color);">
+    <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px;">Team Prober</div>
     
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--brand-green); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800;">V</div>
+        <span style="font-weight: 600; font-size: 0.9rem;">Varuni (Head Chef)</span>
+    </div>
+
+    <div style="display: flex; gap: 8px; margin-top: 10px; opacity: 0.8;">
+        <i class="fas fa-dog" title="Sasha Jr., Cooper, & Whisky"></i>
+        <span style="font-size: 0.8rem; font-weight: 500;">Sasha, Cooper & Whisky</span>
+    </div>
+</div>
     <button id="logout-menu-btn" class="menu-row-btn" onclick="handleLogout()" style="color: #ef4444; margin-top: auto; border-top: 1px solid var(--border-color); border-radius: 0; padding-top: 24px; display: none;">
         <i class="fas fa-sign-out-alt fa-fw"></i> Logout
     </button>
@@ -407,34 +433,25 @@
     </div>
     </div>
 
-    <div id="auth" class="screen">
-        <div style="max-width: 400px; margin: 40px auto; padding: 20px;">
-            <h2 id="auth-title" style="text-align: center; margin-bottom: 24px; color: var(--text-main);">Login</h2>
-            
-            <div class="form-container" id="auth-form" style="border: none; background: transparent; padding: 0;">
-                
-                <div id="name-field-wrapper" class="expandable-wrapper">
-                    <div class="expandable-inner">
-                        <input type="text" id="auth-name" placeholder="Full Name" style="width: 100%; height: 60px; margin-bottom: 10px; padding: 0 20px; border-radius: 16px; border: 2px solid var(--border-color); background: var(--card-bg); font-family: 'Outfit', sans-serif; font-size: 1.1rem; color: var(--text-main); box-sizing: border-box; outline: none;">
-                    </div>
-                </div>                
-       
-<div class="phone-input-wrapper" id="checkout-email-wrapper">
-    <span class="country-code"><i class="fas fa-envelope"></i></span>
-    <input type="email" id="checkout-email" placeholder="hello@example.com">
-</div>
-                
-                <input type="text" id="auth-otp" placeholder="Enter 4-digit OTP" maxlength="4" class="otp-input" style="display: none;">
-                
-                <button class="btn-large" id="auth-submit-btn" onclick="handleAuthSubmit()" style="width: 100%; margin-top: 10px;">Login</button>
-                
-                <div style="text-align: center; margin-top: 16px;">
-                    <p id="auth-toggle-text" style="cursor: pointer; color: var(--text-muted); font-size: 0.9rem;" onclick="toggleAuthMode()">Don't have an account? <strong>Sign Up</strong></p>
-                </div>
-
+  <div id="auth" class="screen">
+    <div style="max-width: 400px; margin: 40px auto; padding: 20px;">
+        <h2 style="text-align: center; margin-bottom: 24px; color: var(--text-main);">Login</h2>
+        
+        <div class="form-container" style="border: none; background: transparent; padding: 0;">
+            <div class="phone-input-wrapper" style="margin-bottom: 12px;">
+                <span class="country-code"><i class="fas fa-envelope"></i></span>
+                <input type="email" id="auth-email" placeholder="hello@example.com">
             </div>
+            
+            <div class="phone-input-wrapper" style="margin-bottom: 20px;">
+                <span class="country-code"><i class="fas fa-lock"></i></span>
+                <input type="password" id="auth-password" placeholder="Enter Password">
+            </div>
+            
+            <button class="btn-large" onclick="handleAuthSubmit()" style="width: 100%;">Login</button>
         </div>
     </div>
+</div>
 
     <div id="chat-screen" class="screen">
     <div class="chat-header">
