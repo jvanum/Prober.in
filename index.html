@@ -1,3 +1,4 @@
+<!-- Cleaned index.html: comments removed and rewritten below -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,30 +13,26 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="app.css">
+    <link rel="stylesheet" href="shared.css">
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
-
     <header class="app-header">
         <div class="brand" onclick="switchScreen('home')" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
-    <img src="icons/icon-192.png" style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover;" alt="Prober Logo">
-    PROBER
-</div>
+             <img src="icons/icon-192.png" style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover;" alt="Prober Logo">
+                PROBER
+        </div>
         
         <div class="header-controls">
-            <div style="position: relative;">
-                <button class="header-icon-btn" onclick="toggleThemeDropdown()" id="theme-btn" title="Change Theme">
-                    <i class="fas fa-palette"></i>
-                </button>
-                <div id="theme-dropdown" class="theme-dropdown hidden">
-                    <div style="padding: 16px; border-bottom: 1px solid var(--border-color); font-weight: 600; font-size: 0.95rem;">App Themes</div>
-                    <div class="theme-swatch-grid" id="theme-swatch-container"></div>
-                </div>
-            </div>
+           
+            <button class="header-icon-btn theme-open-btn"
+        onclick="toggleThemeDropdown(event)">
+            <i class="fas fa-palette"></i>
+        </button>
 
             <div class="veg-toggle-group">
                 <i class="fas fa-leaf" style="color: var(--brand-green);"></i>
-                <span class="veg-label">Veg Mode</span>
+                <span class="veg-label">Veg</span>
                 <label class="switch" style="margin: 0;">
                     <input type="checkbox" id="header-veg-toggle" onchange="handleVegToggle(this)">
                     <span class="slider round"></span>
@@ -51,15 +48,16 @@
                 <i class="fas fa-bars-staggered"></i>
             </button>
         </div>
-    </header>
+</header>
 
-    <div id="offline-banner" style="display: none; position: fixed; top: 75px; left: 0; right: 0; background: #ef4444; color: white; text-align: center; padding: 10px; z-index: 99; font-size: 0.9rem; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+<div id="offline-banner" style="display: none; position: fixed; top: 75px; left: 0; right: 0; background: #ef4444; color: white; text-align: center; padding: 10px; z-index: 99; font-size: 0.9rem; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
     <i class="fas fa-wifi" style="margin-right: 8px;"></i> You are currently offline.
-    </div>
+</div>
 
-    <div id="menu-overlay" class="overlay hidden"> </div>
+<div id="menu-overlay" class="overlay hidden"> 
+</div>
 
-    <div id="home" class="screen">
+<div id="home" class="screen">
         <div class="hero-layout">
             <div class="hero-text-content">
                 
@@ -104,9 +102,9 @@
                 </div>
             </div>
         </div>
-    </div>
+</div>
 
-    <div id="menu" class="screen">
+<div id="menu" class="screen">
         <div class="menu-layout">
             <div class="menu-content">
                 <div class="category-bar">
@@ -128,14 +126,16 @@
                         <span class="category-label">Drinks</span>
                     </button>
                 </div>
+
                 <div class="menu-items-area" id="menu-items-area">
-                    <div class="menu-grid" id="menu-container"></div>
+                   <div class="menu-grid" id="menu-container"></div>
                 </div>
+
             </div>
         </div>
-    </div>
+</div>
 
-    <div id="diet" class="screen">
+<div id="diet" class="screen">
         <div class="diet-layout">
             
             <div class="diet-left-column">
@@ -179,6 +179,14 @@
 </div>
 
                     <button class="btn-large" onclick="calculateBMI()" style="margin-top: 10px;">Calculate BMI</button>
+                
+                                <div class="form-container" style="margin-top: 20px; max-width: 400px; background: rgba(16, 185, 129, 0.05); border: 1px dashed var(--brand-green);">
+    <h3 style="font-size: 0.95rem; margin-bottom: 8px;">Quick Macro Check</h3>
+    <p style="font-size: 0.8rem; margin-bottom: 12px; line-height: 1.4;">Ensure you're hitting your 2g/kg protein goal for today.</p>
+    <button class="btn-large" style="padding: 10px; font-size: 0.85rem; width: 100%;" onclick="showToast('Feature coming soon: Protein Logging!')">
+        Log Protein
+    </button>
+</div>
                 </div>
             </div>
 
@@ -195,11 +203,7 @@
 
 
 
-                <div class="form-container" style="margin-top: 20px; background: rgba(16, 185, 129, 0.05); border: 1px dashed var(--brand-green);">
-    <h3 style="font-size: 0.95rem; margin-bottom: 8px;">Quick Macro Check</h3>
-    <p style="font-size: 0.8rem; margin-bottom: 12px;">Ensure you're hitting your 2g/kg protein goal for today.</p>
-    <button class="btn-outline" style="padding: 10px; font-size: 0.85rem;" onclick="showToast('Feature coming soon: Protein Logging!')">Log Protein</button>
-</div>
+
                 <div id="bmi-recommendations-container" style="display: none;">
                     <div style="margin-bottom: 16px;">
     <h3 style="margin: 0;">Recommended for You</h3>
@@ -220,9 +224,9 @@
 
 
         
-    </div>
+</div>
 
-    <div id="create" class="screen">
+<div id="create" class="screen">
 <div style="max-width: 600px; width: 100%; margin: 0 auto; padding-bottom: 40px; box-sizing: border-box;">            
             <div class="form-container" style="margin-top: 10px;">                
                 <div style="margin-bottom: 24px;">
@@ -268,9 +272,9 @@
 
 
         </div>
-    </div>
+</div>
 
-    <div id="orders" class="screen">
+<div id="orders" class="screen">
     <div style="max-width: 800px; margin: 0 auto; width: 100%; padding-bottom: 40px;">
         <h2 style="margin-bottom: 20px;">Your Orders</h2>
         
@@ -280,40 +284,83 @@
         <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Past Orders</h3>
         <div id="recent-orders-list" style="display: flex; flex-direction: column; gap: 16px;"></div>
     </div>
-    </div>
+</div>
 
-    <div id="cart-panel" class="side-menu">
+<div id="cart-panel" class="side-menu">
         <div class="side-menu-header">
             <h3>Your Order</h3>
             <button class="close-btn" onclick="toggleCart()"><i class="fas fa-times"></i></button>
         </div>
         <div class="side-menu-links" id="cart-items-container" style="overflow-y: auto; padding: 20px;">
             </div>
-        <div style="padding: 20px; border-top: 1px solid var(--border-color); background: var(--card-bg); margin-top: auto;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 16px; font-weight: 800; font-size: 1.2rem;">
-                <span>Total</span>
-                <span>₹<span id="cart-total-price">0</span></span>
-            </div>
-            <button class="btn-large" onclick="checkoutWhatsApp()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;">
-                <i class="fab fa-whatsapp" style="font-size: 1.2rem;"></i> Checkout via WhatsApp
-            </button>
-        </div>
+        <div
+  style="
+    padding:20px;
+    border-top:1px solid var(--border-color);
+    background:var(--card-bg);
+    margin-top:auto;
+  "
+>
+
+  <div id="cart-footer">
+
+    <div
+      style="
+        display:flex;
+        justify-content:space-between;
+        margin-bottom:16px;
+        font-weight:800;
+        font-size:1.2rem;
+      "
+    >
+      <span>Total</span>
+      <span>₹<span id="cart-total-price">0</span></span>
     </div>
 
-    <div id="side-menu-panel" class="side-menu">
+    <button
+      id="checkout-btn"
+      class="btn-large"
+      onclick="checkoutWhatsApp()"
+      style="
+        width:100%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:10px;
+      "
+    >
+      <i class="fab fa-whatsapp"
+         style="font-size:1.2rem;"></i>
+
+      Checkout
+    </button>
+
+  </div>
+
+</div>
+</div>
+
+<div id="side-menu-panel" class="side-menu">
         <div class="side-menu-header">
             <h3>Menu</h3>
             <button class="close-btn" onclick="toggleMenu()"><i class="fas fa-times"></i></button>
         </div>
         <div class="side-menu-links">
-    <button id="login-menu-btn" class="menu-row-btn" onclick="switchScreen('auth'); toggleMenu();">
-        <i class="fas fa-user-circle fa-fw"></i> <span id="user-display-name">Login / Signup</span>
-    </button>
 
-    <button id="admin-menu-btn" class="menu-row-btn" onclick="switchScreen('admin'); renderAdminMenu(); toggleMenu();" style="color: var(--brand-green); display: none;">
-        <i class="fas fa-lock fa-fw"></i> Stock Manager
-    </button>
     
+<div id="login-section">
+    <button class="menu-row-btn" onclick="handleLoginClick()">
+        <i class="fas fa-user-circle fa-fw"></i>
+        <span>Login or Signup</span>
+    </button>
+</div>
+
+
+<div id="user-section" style="display: none;" class="menu-row-btn">
+    <i class="fas fa-user-circle fa-fw"></i>
+    <span id="user-display-name"></span>
+</div>
+
     <div class="menu-row-toggle" style="display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 12px;">
             <i class="fas fa-leaf fa-fw"></i>
@@ -325,135 +372,64 @@
         </label>
     </div>
     
-    <button class="menu-row-btn" onclick="switchScreen('chat-screen'); loadChat(); toggleMenu();">
-    <i class="fas fa-comments fa-fw"></i>Contact Support
+   <button class="menu-row-btn"
+onclick="toggleMenu(); switchScreen('chat-screen'); loadChat();">
+<i class="fas fa-comments fa-fw"></i>
+Contact Support
 </button>
     <div style="margin-top: 20px; padding: 16px; border-top: 1px solid var(--border-color);">
-    <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px;">Team Prober</div>
+
+<div style="display: flex; gap: 8px; margin-top: 15px; opacity: 0.8; align-items: center;">
     
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--brand-green); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800;">V</div>
-        <span style="font-weight: 600; font-size: 0.9rem;">Varuni (Head Chef)</span>
+    <div id="secret-admin-trigger" style="padding: 4px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s; cursor: pointer; z-index: 50;">
+        <i class="fas fa-dog" title="Sasha Jr., Cooper, & Whisky" style="font-size: 1.5rem;"></i>
+            <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1px;margin-left: 10px;">Team Prober</div>
+
+    </div>
     </div>
 
-    <div style="display: flex; gap: 8px; margin-top: 10px; opacity: 0.8;">
-        <i class="fas fa-dog" title="Sasha Jr., Cooper, & Whisky"></i>
-        <span style="font-size: 0.8rem; font-weight: 500;">Sasha, Cooper & Whisky</span>
-    </div>
-</div>
     <button id="logout-menu-btn" class="menu-row-btn" onclick="handleLogout()" style="color: #ef4444; margin-top: auto; border-top: 1px solid var(--border-color); border-radius: 0; padding-top: 24px; display: none;">
         <i class="fas fa-sign-out-alt fa-fw"></i> Logout
     </button>
+</div> </div>
+
 </div>
+
+<div id="auth" class="screen">
+    <div class="auth-container">
+
+    
+<div id="step-input">
+      <h2>Login or Signup</h2>
+      <p class="subtext">Enter your phone number</p>
+
+      <input id="auth-input" placeholder="Phone or Email" />
+
+<button id="send-otp-btn" onclick="handleSendOtp()">Continue</button>    
+</div>
+
+    
+    <div id="step-otp" class="hidden">
+      <h2>Enter OTP</h2>
+      <p class="subtext">We sent it to <span id="user-identifier"></span></p>
+
+<div id="otp-boxes">
+  <input class="otp-digit" id="otp-1" name="otp-1" maxlength="1" />
+  <input class="otp-digit" id="otp-2" name="otp-2" maxlength="1" />
+  <input class="otp-digit" id="otp-3" name="otp-3" maxlength="1" />
+  <input class="otp-digit" id="otp-4" name="otp-4" maxlength="1" />
+  <input class="otp-digit" id="otp-5" name="otp-5" maxlength="1" />
+  <input class="otp-digit" id="otp-6" name="otp-6" maxlength="1" />
+</div>
+      <button id="auth-action-btn" onclick="handleVerifyOtp()">Verify</button>
+
+      <p class="resend" onclick="handleSendOtp()">Resend OTP</p>
     </div>
 
-    <div id="admin" class="screen">
-    <div class="admin-ribbon">
-        <button class="ribbon-btn active" id="tab-status" onclick="showAdminTab('status')">Live Status</button>
-        <button class="ribbon-btn" id="tab-add" onclick="showAdminTab('add')">Add New</button>
-        <button class="ribbon-btn" id="tab-delete" onclick="showAdminTab('delete')">Delete</button>
-        <button class="ribbon-btn" id="tab-support" onclick="showAdminTab('support')">Support</button>
-    </div>
-
-    <div style="max-width: 600px; margin: 0 auto; padding: 0 20px 40px 20px;">
-        
-        <div id="admin-tab-status" class="admin-tab-content active">
-            <div class="admin-tabs" style="margin-bottom: 15px; display: flex; gap: 8px; overflow-x: auto;">
-                <button class="admin-tab active" onclick="updateAdminView('All')">All</button>
-                <button class="admin-tab" onclick="updateAdminView('Vegetarian')">Veg</button>
-                <button class="admin-tab" onclick="updateAdminView('Vegan')">Vegan</button>
-                <button class="admin-tab" onclick="updateAdminView('Non Vegetarian')">Non-Veg</button>
-            </div>
-            <div class="form-container">
-                <div id="admin-menu-list-status" style="display: flex; flex-direction: column; gap: 12px;"></div>
-            </div>
-        </div>
-
-        <div id="admin-tab-add" class="admin-tab-content">
-            <div class="add-dish-form">
-                <form id="add-item-form" onsubmit="handleAddItem(event)">
-                    <div class="admin-input-group">
-                        <input type="text" id="add-name" placeholder="Dish Name" required>
-                        <select id="add-category">
-                            <option value="Vegetarian">Vegetarian</option>
-                            <option value="Vegan">Vegan</option>
-                            <option value="Non Vegetarian">Non-Veg</option>
-                            <option value="Beverage">Beverage</option>
-                            <option value="Base">Base</option>
-                            <option value="Protein">Protein</option>
-                            <option value="Fat">Fat</option>
-                        </select>
-                    </div>
-                    <div class="admin-input-group">
-                        <div class="admin-price-row" style="width: 100%;">
-                            <div class="price-currency-icon">₹</div>
-                            <input type="number" id="add-price" placeholder="Price" required>
-                        </div>
-                        <input type="number" id="add-protein" placeholder="Protein (g)">
-                        <input type="number" id="add-fat" placeholder="Fat (g)">
-                    </div>
-                    <div style="margin-bottom: 16px;">
-                        <input type="file" id="add-img-file" accept="image/*" onchange="previewImage(this)" style="display: none;">
-                        <label for="add-img-file" class="btn-outline" style="text-align: center; display: block; width: 100%; border-radius: 12px; padding: 16px;">
-                            <i class="fas fa-image"></i> Upload Image
-                        </label>
-                        <div id="img-preview-container" style="display: none; margin-top: 10px; text-align: center;">
-                            <img id="img-preview" style="max-height: 120px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn-large" style="width: 100%;">Publish Dish</button>
-                </form>
-            </div>
-        </div>
-
-        <div id="admin-tab-delete" class="admin-tab-content">
-            <div class="form-container">
-                <div id="admin-menu-list-delete" style="display: flex; flex-direction: column; gap: 12px;"></div>
-            </div>
-        </div>
-
-        <div id="admin-tab-support" class="admin-tab-content">
-            <div id="admin-chat-users-list" style="display: flex; flex-direction: column; gap: 8px;">
-                </div>
-
-            <div id="admin-chat-window" style="display: none; flex-direction: column; background: var(--card-bg); border-radius: 20px; border: 1px solid var(--border-color); overflow: hidden; height: 60vh;">
-                <div style="padding: 16px; background: var(--bg-light); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px;">
-                    <button class="header-icon-btn" onclick="closeAdminChat()" style="background: white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.05); width: 36px; height: 36px;">
-                        <i class="fas fa-arrow-left" style="font-size: 1rem;"></i>
-                    </button>
-                    <span style="font-weight: 800; font-size: 1.1rem;" id="admin-chat-customer-name">Customer</span>
-                </div>
-                <div id="admin-chat-messages" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; background: var(--bg-light);"></div>
-                <div style="padding: 16px; background: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; gap: 10px;">
-                    <input type="text" id="admin-reply-input" placeholder="Type reply..." style="flex: 1; padding: 16px; border-radius: 16px; border: 1px solid var(--border-color); background: var(--bg-light); outline: none;">
-                    <button class="btn-large" onclick="sendAdminReply()">Send <i class="fas fa-paper-plane"></i></button>
-                </div>
-            </div>
-        </div>
-    </div>
-    </div>
-
-  <div id="auth" class="screen">
-    <div style="max-width: 400px; margin: 40px auto; padding: 20px;">
-        <h2 style="text-align: center; margin-bottom: 24px; color: var(--text-main);">Login</h2>
-        
-        <div class="form-container" style="border: none; background: transparent; padding: 0;">
-            <div class="phone-input-wrapper" style="margin-bottom: 12px;">
-                <span class="country-code"><i class="fas fa-envelope"></i></span>
-                <input type="email" id="auth-email" placeholder="hello@example.com">
-            </div>
-            
-            <div class="phone-input-wrapper" style="margin-bottom: 20px;">
-                <span class="country-code"><i class="fas fa-lock"></i></span>
-                <input type="password" id="auth-password" placeholder="Enter Password">
-            </div>
-            
-            <button class="btn-large" onclick="handleAuthSubmit()" style="width: 100%;">Login</button>
-        </div>
     </div>
 </div>
 
-    <div id="chat-screen" class="screen">
+<div id="chat-screen" class="screen">
     <div class="chat-header">
         <div class="header-icon"><i class="fas fa-headset"></i></div>
         <div>
@@ -471,9 +447,9 @@
         Send Message <i class="fas fa-paper-plane"></i>
     </button>
 </div>
-    </div>
+</div>
 
-    <nav class="bottom-nav">
+<nav class="bottom-nav">
     <button class="nav-item" onclick="switchScreen('home')" id="nav-home">
         <i class="fa-solid fa-house"></i><span>Home</span>
     </button>
@@ -486,30 +462,124 @@
     <button class="nav-item" onclick="switchScreen('create')" id="nav-create">
         <i class="fa-solid fa-wand-magic-sparkles"></i><span>Create</span>
     </button>
-    </nav>
+</nav>
 
-<div id="checkout-modal" class="overlay hidden" style="display: flex; align-items: center; justify-content: center; z-index: 1000;">
-    <div class="form-container" style="width: 90%; max-width: 400px; animation: fadeUp 0.3s ease;">
-        <h3 style="margin-bottom: 8px;">Delivery Details</h3>
-        <p style="margin-bottom: 20px; font-size: 0.9rem;">Enter your email to confirm your order.</p>
+<div id="checkout-modal" class="overlay hidden" style="display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; box-sizing: border-box;">
+    <div class="form-container centered-modal" style="width: 100%; max-width: 400px; border-radius: 24px; margin: 0; padding: 24px; box-sizing: border-box; background: var(--card-bg); box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
         
-        <div class="phone-input-wrapper" id="checkout-email-wrapper" style="margin-bottom: 20px;">
-            <span class="country-code"><i class="fas fa-envelope"></i></span>
-            <input type="email" id="checkout-email" placeholder="hello@example.com">
+        <h3 style="margin-bottom: 20px; text-align: center;">Delivery Details</h3>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; width: 100%;">
+            
+            <button class="btn-outline" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; box-sizing: border-box; border-color: var(--border-color); color: var(--text-main);">
+                <i class="fas fa-map-marker-alt" style="color: #ef4444;"></i> Choose Delivery Location
+            </button>
+
+            <input type="text" id="checkout-address" placeholder="Flat / House No / Landmark" style="width: 100%; box-sizing: border-box; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text-main); outline: none; font-family: 'Outfit', sans-serif;">
+
+            <textarea id="checkout-notes" placeholder="Delivery notes (optional)" style="width: 100%; box-sizing: border-box; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text-main); resize: none; font-family: 'Outfit', sans-serif; outline: none;" rows="2"></textarea>
         </div>
 
-        <div style="display: flex; gap: 12px;">
-            <button class="btn-outline" onclick="toggleCheckoutModal()" style="flex: 1; border-color: var(--text-muted); color: var(--text-muted);">Cancel</button>
-            <button class="btn-large" onclick="processCheckout()" style="flex: 2;">Confirm Order</button>
+        <div style="display: flex; gap: 12px; width: 100%;">
+            <button class="btn-outline" onclick="toggleCheckoutModal()" style="flex: 1; border-color: var(--border-color); color: var(--text-muted); box-sizing: border-box;">Cancel</button>
+            <button class="btn-large" onclick="processCheckout()" style="flex: 2; box-sizing: border-box;">Place Order</button>
         </div>
     </div> 
-</div> 
+</div>
 
 <div id="loading-spinner" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 9999; background: var(--bg-light);">
     <div class="spinner"></div>
 </div>
 
+<div id="name-modal" class="hidden">
+  <div class="form-container" style="max-width:400px; margin:40px auto;">
+    <h3>Welcome to Prober 👋</h3>
+    <p style="margin-bottom:12px;">What should we call you?</p>
+
+    <input
+      id="customer-name-input"
+      type="text"
+      placeholder="Your name"
+      style="margin-bottom:12px;"
+    >
+
+    <button class="btn-large" onclick="saveCustomerName()">
+      Continue
+    </button>
+  </div>
+</div>
+
+<div id="map-picker" class="fullscreen hidden">
+
+  <div class="map-header">
+    Select Delivery Location
+  </div>
+
+  <div id="map"></div>
+
+  <div class="map-footer">
+    <p id="picked-address"></p>
+    <button onclick="confirmMapLocation()">
+      Confirm Location
+    </button>
+  </div>
+
+</div>
+
+<div id="location-gate" class="overlay hidden">
+  <div class="location-modal">
+
+    <h2>Check Delivery Availability</h2>
+    <p>We’ll verify if we deliver to your area.</p>
+
+    <button class="btn-large"
+      onclick="detectUserLocation()"
+      style="width:100%; margin-top:15px;">
+      Use Current Location
+    </button>
+
+    <button class="btn-outline"
+      onclick="closeLocationGate()"
+      style="width:100%; margin-top:10px;">
+      Cancel
+    </button>
+
+  </div>
+</div>
+
+<div id="vault-modal" class="overlay hidden" style="display: flex; align-items: center; justify-content: center; z-index: 2000;">
+    <div class="vault-modal-box">
+        <h2 style="text-align: center;">🔐 Master Vault</h2>
+        <p style="text-align: center;">Enter access key to continue</p>
+
+        <input type="password" id="vault-key-input" placeholder="Enter key" autocomplete="off">
+
+        <div class="vault-actions">
+            <button class="btn-outline" onclick="closeVaultModal()">Cancel</button>
+            <button class="btn-large" onclick="submitVaultKey()">Unlock</button>
+        </div>
+    </div>
+</div>
+
+<div id="theme-dropdown" class="theme-dropdown">
+
+    <button class="theme-box t1"
+            onclick="selectTheme('clean-white')"></button>
+
+    <button class="theme-box t2"
+            onclick="selectTheme('dark-grey')"></button>
+
+    <button class="theme-box t3"
+            onclick="selectTheme('white-accent')"></button>
+
+    <button class="theme-box t4"
+            onclick="selectTheme('dark-accent')"></button>
+
+</div>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.22.0/dist/pocketbase.umd.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="shared.js"></script>
 <script src="app.js"></script>
 
 </body>

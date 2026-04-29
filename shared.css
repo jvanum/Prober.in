@@ -1,0 +1,159 @@
+/* =====================================================
+   THEME DROPDOWN (Shared / Home / Admin)
+   Keeps same UI, polished + responsive
+===================================================== */
+
+.theme-dropdown{
+    position: fixed;
+    top: 64px;
+    right: 14px;
+
+    width: 96px;
+    padding: 10px;
+
+    display: none;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+
+    box-shadow:
+        0 10px 25px rgba(0,0,0,.15),
+        0 4px 10px rgba(0,0,0,.08);
+
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    z-index: 9999;
+
+    animation: themeFadeIn .18s ease;
+    box-sizing: border-box;
+}
+
+/* Open state */
+.theme-dropdown.open{
+    display: grid;
+}
+
+/* Theme squares */
+.theme-box{
+    width: 34px;
+    height: 34px;
+
+    border: none;
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    transition:
+        transform .16s ease,
+        box-shadow .16s ease,
+        opacity .16s ease;
+
+    box-sizing: border-box;
+}
+
+/* Hover */
+.theme-box:hover{
+    transform: translateY(-1px) scale(1.05);
+    box-shadow: 0 6px 14px rgba(0,0,0,.14);
+}
+
+/* Click */
+.theme-box:active{
+    transform: scale(.96);
+}
+
+/* Focus */
+.theme-box:focus{
+    outline: 2px solid var(--brand-green);
+    outline-offset: 2px;
+}
+
+/* Theme Colors */
+.t1{
+    background: #ffffff;
+    border: 1px solid #dddddd;
+}
+
+.t2{
+    background: #111827;
+}
+
+.t3{
+    background: #8b5cf6;
+}
+
+.t4{
+    background: #f97316;
+}
+
+/* Small screens */
+@media (max-width: 768px){
+
+    .theme-dropdown{
+        top: 58px;
+        right: 10px;
+
+        width: 92px;
+        padding: 9px;
+        gap: 9px;
+    }
+
+    .theme-box{
+        width: 32px;
+        height: 32px;
+    }
+}
+
+/* Large screens */
+@media (min-width: 1200px){
+
+    .theme-dropdown{
+        top: 68px;
+        right: 18px;
+    }
+}
+
+/* Entry animation */
+@keyframes themeFadeIn{
+    from{
+        opacity: 0;
+        transform: translateY(-6px) scale(.96);
+    }
+    to{
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* =====================================================
+   THEME DROPDOWN STRICT ALIGNMENT & SIZING
+===================================================== */
+.theme-dropdown {
+    position: fixed !important;
+    width: 96px !important;
+    height: auto !important;
+    padding: 10px !important;
+    display: none !important; /* Hidden by default */
+    grid-template-columns: repeat(2, 1fr) !important; /* Force 2x2 grid */
+    gap: 10px !important;
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,.15), 0 4px 10px rgba(0,0,0,.08) !important;
+    z-index: 99999 !important;
+    flex-direction: row !important; /* Resets conflicting app.css */
+}
+
+.theme-dropdown.open {
+    display: grid !important;
+}
+
+/* Ensure squares don't get squished */
+.theme-box {
+    width: 34px !important;
+    height: 34px !important;
+}
