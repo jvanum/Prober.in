@@ -1,0 +1,404 @@
+<!-- =====================================================
+     ADMIN.HTML
+     Replace your old admin screen with this full page
+===================================================== -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Prober Admin</title>
+
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="admin.css">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+</head>
+
+<body>
+
+<!-- =====================================================
+     ADMIN ROOT
+===================================================== -->
+
+<div id="admin" class="admin-root">
+    <header class="admin-topbar">
+
+    <div class="admin-brand"
+         onclick="window.location.href='index.html'">
+
+        <img src="icons/icon-192.png" alt="logo">
+        <span>PROBER</span>
+
+    </div>
+
+    <div class="admin-top-actions">
+        <button id="top-add-btn" class="top-icon-btn" style="display:none; color: var(--brand-green);" onclick="document.getElementById('add-item-drawer').classList.add('open')">
+            <i class="fas fa-plus"></i>
+        </button>
+        <button class="top-icon-btn theme-open-btn"
+        onclick="toggleThemeDropdown(event)">
+            <i class="fas fa-palette"></i>
+        </button>
+
+        <button class="top-icon-btn"
+                onclick="toggleAdminMenu()">
+            <i class="fas fa-bars"></i>
+        </button>
+
+    </div>
+
+</header>
+<div id="theme-dropdown" class="theme-dropdown">
+
+    <button class="theme-box t1"
+            onclick="selectTheme('clean-white')"></button>
+
+    <button class="theme-box t2"
+            onclick="selectTheme('dark-grey')"></button>
+
+    <button class="theme-box t3"
+            onclick="selectTheme('white-accent')"></button>
+
+    <button class="theme-box t4"
+            onclick="selectTheme('dark-accent')"></button>
+
+</div>
+<div id="admin-flyout" class="admin-flyout">
+
+    <button onclick="adminLogout()">
+        <i class="fas fa-sign-out-alt"></i>
+        Logout
+    </button>
+
+</div>
+    <main class="admin-main">
+   <!-- =================================================
+         ORDERS PAGE
+    ================================================== -->
+
+    <section id="admin-orders"
+             class="admin-page active">
+
+        <div class="admin-page-head">
+            <h2>Incoming Orders</h2>
+            <span id="orders-count-badge">0</span>
+        </div>
+
+        <div id="orders-list" class="admin-list">
+
+            <!-- Filled by admin.js -->
+
+        </div>
+
+    </section>
+
+
+    <!-- =================================================
+         LIVE PAGE
+    ================================================== -->
+
+    <section id="admin-live"
+             class="admin-page">
+
+        <div class="admin-page-head">
+            <h2>Live Availability</h2>
+        </div>
+
+        <div id="live-list" class="admin-list">
+
+            <!-- Filled by admin.js -->
+
+        </div>
+
+    </section>
+
+     <!-- =================================================
+         SUPPORT PAGE
+    ================================================== -->
+
+    <section id="admin-support"
+             class="admin-page">
+
+        <div class="admin-page-head">
+            <h2>Support Inbox</h2>
+            <span id="support-count-badge">0</span>
+        </div>
+
+        <div id="support-list" class="admin-list">
+
+            <!-- Filled by admin.js -->
+
+        </div>
+
+    </section>
+    <!-- =================================================
+         MANAGE PAGE
+    ================================================== -->
+
+    <section id="admin-manage"
+             class="admin-page">
+
+        <div class="admin-page-head">
+            <h2>Manage Menu</h2>
+        </div>
+
+        <div class="manage-grid">
+
+            <button class="btn-large"
+                    onclick="adminOpenAddItem()">
+
+                <i class="fas fa-plus-circle"></i>
+                Add Item
+
+            </button>
+
+            <button class="btn-large"
+                    onclick="adminLoadManage()">
+
+                <i class="fas fa-trash"></i>
+                Delete Item
+
+            </button>
+
+            <button class="btn-large"
+                    onclick="adminLoadManage()">
+
+                <i class="fas fa-pen"></i>
+                Edit Item
+
+            </button>
+
+            <button class="btn-large"
+                    onclick="adminLoadManage()">
+
+                <i class="fas fa-layer-group"></i>
+                Categories
+
+            </button>
+
+        </div>
+
+        <div id="manage-items-list"
+             class="admin-list"
+             style="margin-top:16px;">
+
+        </div>
+
+    </section>
+
+
+   
+
+
+
+    <!-- =================================================
+         BOTTOM NAV
+    ================================================== -->
+
+    <nav class="admin-bottom-nav">
+
+        <button class="admin-nav-btn active" onclick="adminShowPage('orders')">
+
+            <i class="fas fa-box"></i>
+            <span>Orders</span>
+
+        </button>
+
+        <button class="admin-nav-btn" onclick="adminShowPage('live')">
+
+            <i class="fas fa-toggle-on"></i>
+            <span>Stock</span>
+
+        </button>
+
+<button class="admin-nav-btn" onclick="adminShowPage('manage')">
+
+            <i class="fas fa-sliders"></i>
+            <span>Manage</span>
+
+        </button>
+        <button class="admin-nav-btn" onclick="adminShowPage('support')">
+
+            <i class="fas fa-comments"></i>
+            <span>Support</span>
+
+        </button>
+
+        
+
+        <button class="admin-nav-btn" onclick="adminShowPage('manage')">
+
+            <i class="fas fa-sliders"></i>
+            <span>Settings</span>
+
+        </button>
+
+        
+
+    </nav>
+
+
+
+    <!-- =================================================
+         ORDER DRAWER
+    ================================================== -->
+
+    <aside id="order-drawer"
+           class="admin-drawer">
+
+        <div class="drawer-head">
+
+            <button onclick="adminCloseOrder()">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+
+            <strong>Order Details</strong>
+
+        </div>
+
+        <div id="order-drawer-body" class="drawer-body">
+
+            <!-- Filled by admin.js -->
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- =================================================
+         SUPPORT DRAWER
+    ================================================== -->
+
+    <aside id="support-drawer"
+           class="admin-drawer">
+
+        <div class="drawer-head">
+
+            <button onclick="adminCloseSupport()">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+
+            <strong id="chat-user-name">
+                Customer
+            </strong>
+
+        </div>
+
+       <div id="support-chat-messages" class="drawer-chat">
+
+            <!-- Messages -->
+
+        </div>
+
+        <div class="drawer-send">
+
+            <input type="text"
+                   id="admin-chat-input"
+                   placeholder="Type reply...">
+
+            <button onclick="sendAdminReply()">
+                Send
+            </button>
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- =================================================
+         ADD ITEM DRAWER
+    ================================================== -->
+
+    <aside id="add-item-drawer"
+           class="admin-drawer">
+
+        <div class="drawer-head">
+
+            <button onclick="adminCloseAddItem()">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+
+            <strong>Add New Item</strong>
+
+        </div>
+
+        <div class="drawer-body">
+            <form onsubmit="adminHandleAddItem(event)"
+            
+                  class="admin-form">
+
+                <input type="text"
+                       id="add-name"
+                       placeholder="Item Name"
+                       required>
+
+                <input type="number"
+                       id="add-price"
+                       placeholder="Price"
+                       required>
+
+                <input type="number"
+                       id="add-protein"
+                       placeholder="Protein">
+
+                <input type="number"
+                       id="add-fat"
+                       placeholder="Fat">
+
+                <select id="add-category">
+
+                    <option>Vegetarian</option>
+                    <option>Vegan</option>
+                    <option>Non Vegetarian</option>
+                    <option>Beverage</option>
+                    <option>Base</option>
+                    <option>Protein</option>
+                    <option>Fat</option>
+
+                </select>
+
+                <button class="btn-large"
+                        type="submit">
+
+                    Save Item
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </aside>
+
+
+
+    </main>
+</div>
+
+
+<!-- =====================================================
+     SCRIPTS
+===================================================== -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/pocketbase/dist/pocketbase.umd.js"></script>
+
+<script src="shared.js"></script>
+
+<script src="admin.js"></script>
+
+
+
+</body>
+</html>
