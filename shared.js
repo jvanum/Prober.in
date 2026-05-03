@@ -1,9 +1,3 @@
-/* =====================================================
-   SHARED.JS
-   Common layer for index.html + admin.html
-===================================================== */
-
-/* ---------- FIREBASE ---------- */
 const firebaseConfig = {
   apiKey: "AIzaSyBdmozHYLYhk6WEalzEr5KnuSJ15HwrTzI",
   authDomain: "prober-in.firebaseapp.com",
@@ -16,28 +10,16 @@ if (!firebase.apps.length) {
 }
 
 const auth = firebase.auth();
-
-
-/* ---------- POCKETBASE ---------- */
-const API_URL =
-  "https://proberin-production.up.railway.app";
+const API_URL =  "https://proberin-production.up.railway.app";
 
 const pb = new PocketBase(API_URL);
-
-
 /* ---------- GLOBAL STATE ---------- */
 window.currentCustomer = null;
-
-
 /* ---------- ADMIN USERS ---------- */
-const ADMIN_UIDS = [
-  "Yjeb54aT9uRirfnbakTxBN2qdF33"
-];
-
+const ADMIN_UIDS = ["Yjeb54aT9uRirfnbakTxBN2qdF33"];
 /* ==================================
    GLOBAL THEME SYSTEM
 ================================== */
-
 window.appThemes = {
   "clean-white": {
     "--brand-green":"#10b981",
@@ -47,7 +29,6 @@ window.appThemes = {
     "--border-color":"#e5e7eb",
     "--card-bg":"#f9fafb"
   },
-
   "dark-grey": {
     "--brand-green":"#3b82f6",
     "--bg-light":"#111827",
@@ -56,7 +37,6 @@ window.appThemes = {
     "--border-color":"#374151",
     "--card-bg":"#1f2937"
   },
-
   "white-accent": {
     "--brand-green":"#8b5cf6",
     "--bg-light":"#ffffff",
@@ -65,7 +45,6 @@ window.appThemes = {
     "--border-color":"#e5e7eb",
     "--card-bg":"#ffffff"
   },
-
   "dark-accent": {
     "--brand-green":"#f97316",
     "--bg-light":"#1f2937",
@@ -76,189 +55,40 @@ window.appThemes = {
   }
 };
 
-window.applyTheme = function(name){
+window.applyTheme = function(name) {
+    const theme = window.appThemes[name];
+    if (!theme) return;
 
-    const theme = appThemes[name];
-    if(!theme) return;
+    // Apply CSS variables to document
+    Object.entries(theme).forEach(([k, v]) => {
+        document.documentElement.style.setProperty(k, v);
+    });
 
-    Object.entries(theme).forEach(
-      ([k,v])=>{
-        document.documentElement
-          .style
-          .setProperty(k,v);
-      }
-    );
-
-    localStorage.setItem(
-      "theme",
-      name
-    );
-};
-
-window.renderThemeSwatches = function(){
-
-    const box =
-      document.getElementById(
-        "theme-swatch-container"
-      );
-
-    if(!box) return;
-
-    const current =
-      localStorage.getItem("theme")
-      || "clean-white";
-
-    box.innerHTML =
-      Object.entries(appThemes)
-      .map(([key,vars])=>`
-
-        <button
-          class="theme-swatch
-            ${current===key?'active':''}"
-          onclick="
-            applyTheme('${key}');
-            renderThemeSwatches();
-            closeThemePanel();
-          "
-          style="
-            background:${vars["--card-bg"]};
-            border:2px solid ${vars["--brand-green"]};
-          ">
-        </button>
-
-      `).join("");
-};
-
-window.openThemePanel = function () {
-
-    const panel =
-      document.getElementById("theme-panel");
-
-    if (!panel) return;
-
-    panel.classList.add("open");
-    renderThemeSwatches();
-
-    setTimeout(() => {
-      document.addEventListener(
-        "click",
-        closeThemePanelOutsideClick
-      );
-    }, 0);
-};
-
-window.closeThemePanel = function () {
-
-    const panel =
-      document.getElementById("theme-panel");
-
-    if (panel) {
-      panel.classList.remove("open");
+    // Update the mobile status bar color dynamically
+    const metaThemeColor = document.querySelector("meta[name='theme-color']");
+    if (metaThemeColor) {
+        metaThemeColor.setAttribute("content", theme["--card-bg"] || theme["--bg-light"]);
     }
 
-    document.removeEventListener(
-      "click",
-      closeThemePanelOutsideClick
-    );
-};
-function closeThemePanelOutsideClick(e) {
-
-    const panel =
-      document.getElementById("theme-panel");
-
-    if (!panel) return;
-
-    const clickedInsidePanel =
-      panel.contains(e.target);
-
-    const clickedThemeButton =
-      e.target.closest(
-        ".theme-open-btn"
-      );
-
-    if (
-      !clickedInsidePanel &&
-      !clickedThemeButton
-    ) {
-      closeThemePanel();
-    }
-}
-
-/* =====================================================
-   BULLETPROOF THEME DROPDOWN TOGGLE
-===================================================== */
-window.toggleThemeDropdown = function(e){
-    e.stopPropagation();
-    
-    const box = document.getElementById("theme-dropdown");
-    
-    // Fix: Safely grab the button that was actually clicked
-    // instead of relying on the sometimes-unreliable event target
-    const btn = e.target.closest('.theme-open-btn') || document.querySelector('.theme-open-btn');
-    
-    if (!box || !btn) return;
-
-    // Calculate position before opening
-    if (!box.classList.contains("open")) {
-        const rect = btn.getBoundingClientRect();
-        
-        box.style.top = (rect.bottom + 10) + "px";
-        
-        // Center it under the icon
-        let dropLeft = rect.left + (rect.width / 2) - 48; 
-        
-        // Safety check for small mobile screens
-        if (dropLeft + 96 > window.innerWidth) dropLeft = window.innerWidth - 106; 
-        if (dropLeft < 10) dropLeft = 10;
-
-        box.style.left = dropLeft + "px";
-        box.style.right = "auto";
-    }
-
-    box.classList.toggle("open");
-    
-    // Ensure app.js hasn't forced it permanently hidden
-    box.classList.remove("hidden"); 
+    localStorage.setItem("theme", name);
 };
 
-/* =====================================================
-   SAFE GLOBAL CLICK LISTENER (Replaces the old one)
-===================================================== */
-document.addEventListener("click", function(e) {
-    const box = document.getElementById("theme-dropdown");
-    const btn = document.querySelector('.theme-open-btn');
-    
-    if (box && box.classList.contains("open")) {
-        // Only close it if the user clicked OUTSIDE both the dropdown and the button
-        if (!box.contains(e.target) && btn && !btn.contains(e.target)) {
-            box.classList.remove("open");
-        }
+window.selectTheme = function(name) {
+    // 1. Apply the CSS variables to the document
+    window.applyTheme(name);
+
+    // 2. Visually update the buttons in the sidebar to show which is active
+    const themeBtns = document.querySelectorAll('.theme-box');
+    if (themeBtns.length > 0) {
+        themeBtns.forEach(btn => {
+            btn.classList.remove('active');
+            // Check if this button's onclick attribute matches the selected theme
+            if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(name)) {
+                btn.classList.add('active');
+            }
+        });
     }
-});
-
-window.selectTheme = function(name){
-
-    applyTheme(name);
-
-    document
-      .getElementById("theme-dropdown")
-      .classList.remove("open");
 };
-
-
-document.addEventListener(
-"DOMContentLoaded",()=>{
-
-   const saved =
-     localStorage.getItem("theme")
-     || "clean-white";
-
-   applyTheme(saved);
-
-});
-
-
-
 
 /* ---------- HELPERS ---------- */
 function isAdmin() {
@@ -448,3 +278,21 @@ function isAdminPage() {
     .toLowerCase()
     .includes("admin");
 }
+/* =====================================================
+   INITIALIZATION ON PAGE LOAD
+===================================================== */
+document.addEventListener("DOMContentLoaded", () => {
+    // Load Theme & Highlight correct button in sidebar
+    const savedTheme = localStorage.getItem("theme") || "clean-white";
+    if (typeof window.selectTheme === 'function') {
+        window.selectTheme(savedTheme); 
+    } else {
+        applyTheme(savedTheme);
+    }
+
+    // Load Font & Highlight correct button in sidebar
+    const savedFont = localStorage.getItem("prober_font") || "Outfit";
+    if (typeof window.changeFont === 'function') {
+        window.changeFont(savedFont);
+    }
+});

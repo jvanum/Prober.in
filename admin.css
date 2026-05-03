@@ -39,7 +39,6 @@ html, body {
     padding: 0;
     width: 100%;
     max-width: 100vw;
-    overflow-x: hidden;
     background: var(--bg-light);
     font-family: 'Outfit', sans-serif;
     color: var(--text-main);
@@ -793,11 +792,6 @@ html, body {
    ADMIN FLYOUT, LOGOUT STYLING, & THEME ALIGNMENT
 ===================================================== */
 
-/* 1. Pin Theme Dropdown exactly at the 75px header edge */
-.theme-dropdown {
-    top: 75px !important;
-}
-
 /* 2. Pin Admin Hamburger Menu (Flyout) to the 75px header edge */
 .admin-flyout {
     top: 75px !important;
@@ -838,23 +832,6 @@ html, body {
    APP LAYOUT LOCK (Fixed Headers, Inline Scroll)
 ===================================================== */
 
-/* 1. Lock the global window from scrolling or bouncing */
-html, body {
-    overflow: hidden !important; 
-    height: 100vh !important;
-    position: fixed;
-    width: 100%;
-    overscroll-behavior-y: none;
-}
-
-/* 2. Force the root structure to exact screen height */
-.admin-root {
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    padding: 0 !important; 
-    overflow: hidden;
-}
 
 .admin-topbar, .admin-bottom-nav {
     position: relative !important; 
@@ -945,15 +922,6 @@ html, body {
    ULTIMATE INLINE SCROLL FIX 
    (Locks Nav Bar, Prevents Shrinking, Scrolls Lists)
 ===================================================== */
-
-/* 1. Lock the outer window */
-html, body {
-    height: 100vh !important;
-    width: 100vw !important;
-    overflow: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
 
 /* 2. The Main Wrapper takes exactly 100vh */
 .admin-root {

@@ -12,6 +12,13 @@ html, body {
     flex-direction: column;
 }
 
+/* The parent container that holds everything */
+body {
+    background: var(--bg-light);
+    color: var(--text-main);
+    font-family: 'Outfit', sans-serif;
+}
+
 /* Header and Nav are fixed height, they do NOT scroll */
 .app-header, .bottom-nav {
     flex-shrink: 0 !important;
@@ -33,6 +40,9 @@ main {
 /* =====================================================
    DARK MODE & UI FIXES (From Screenshots)
 ===================================================== */
+:root {
+    --text-primary: var(--text-main);
+}
 
 /* Fix for overlapping cards in Menu */
 #menu-items-area {
@@ -44,16 +54,61 @@ main {
 
 /* --- BMI CARD OUTER CONTAINER --- */
 /* (Class assumed based on image_10.png) */
+.form-container {
+    box-sizing: border-box;
+
+    /* 1. Copying the exact background style (A sleek gradient) */
+    background: linear-gradient(135deg, #1f2937 0%, #0f172a 100%);
+
+    /* 2. FIX: Remove rounded corners to make it perfectly square */
+    border-radius: 0 !important;
+
+    /* 3. FIX: Add the premium, softened depth shadow */
+
+    /* 4. FIX: Add the faint edge line for light mode compatibility */
+    border: 1px solid rgba(128, 128, 128, 0.1) !important;
+
+    /* --- Maintaining internal layout from image_10.png --- */
+    padding: 40px; /* Maintain or increase padding for cleaner look */
+    display: flex;
+    flex-direction: column;
+    gap: 16px; /* Matches the space between elements in image_10.png */
+}
 
 input, select, textarea {
     background: var(--bg-light) !important;
     color: var(--text-main) !important;
     border: 1px solid var(--border-color) !important;
-}
-
-/* =====================================================
+}/* =====================================================
    INDEX PAGE FIXES (Dark Mode, Text, & Proportions)
 ===================================================== */
+
+/* 1. Fix missing text variable that breaks dark mode */
+:root {
+    --text-primary: var(--text-main);
+}
+
+/* 2. Shrink oversized buttons across the home page */
+.btn-large {
+    padding: 12px 20px !important; /* Slimmer top/bottom padding */
+    font-size: 1rem !important;    /* Slightly smaller text */
+    min-height: 48px;              /* Prevent them from getting too tall */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* 3. Fix Chat & Auth Inputs in Dark Mode */
+.chat-input-area input,
+.auth-container input,
+.form-container input,
+.form-container select,
+.phone-input-wrapper input {
+    color: var(--text-main) !important; 
+    background: var(--bg-light) !important;
+    border-color: var(--border-color) !important;
+}
 
 /* 4. Fix placeholder text color in dark mode */
 ::placeholder {
@@ -61,6 +116,14 @@ input, select, textarea {
     opacity: 0.8 !important;
 }
 
+/* 5. Tighten up the Meal Builder cards so they aren't massive */
+.builder-card {
+    padding: 12px !important;
+    min-height: auto;
+}
+.builder-card > div:first-child {
+    font-size: 0.95rem; 
+}
 
 .app-header {
     flex-shrink: 0; 
@@ -100,6 +163,33 @@ input, select, textarea {
 }
 
 
+
+.spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(16, 185, 129, 0.2);
+    border-top: 3px solid #10b981; 
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+    display: block; 
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+:root { 
+    --brand-green: #10b981; 
+    --bg-light: #fbfbfc; 
+    --text-main: #111827;
+    --text-muted: #6b7280;
+    --nav-bg: rgba(255, 255, 255, 0.85);
+    --border-color: #f3f4f6;
+    --card-bg: #ffffff;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+    --shadow-hover: 0 12px 32px rgba(16, 185, 129, 0.15);
+}
 
 body { 
     font-family: 'Outfit', sans-serif; 
@@ -243,8 +333,78 @@ p, label { color: var(--text-muted); }
 
 
 
+.form-container { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 16px; 
+    padding: 24px; 
+    background: var(--card-bg); 
+    border-radius: 24px; 
+    box-shadow: 0 4px 24px rgba(0,0,0,0.02); 
+    
+    
+    width: 100%;
+    box-sizing: border-box;
+}
 
 
+.form-container input, .form-container select { 
+    width: 100%;              
+    box-sizing: border-box;   
+    padding: 16px; 
+    
+    border: none; 
+    border-radius: 12px; 
+    font-family: 'Outfit', sans-serif; 
+    font-size: 1rem;
+    background: var(--bg-light); 
+    color: var(--text-main); 
+    transition: box-shadow 0.2s, background 0.2s;
+}
+
+.form-container input:focus, .form-container select:focus {
+    outline: none;
+    background: var(--card-bg);
+    
+    box-shadow: inset 0 0 0 2px var(--brand-green); 
+}
+
+.form-container label { 
+    font-size: 0.85rem; 
+    font-weight: 700; 
+    color: var(--text-main);
+    margin-left: 4px; 
+}
+
+
+
+.btn-large { 
+    background: var(--brand-green); 
+    color: white; 
+    border: none; 
+    padding: 16px; 
+    border-radius: 14px; 
+    cursor: pointer; 
+    
+    
+    font-family: 'Outfit', sans-serif; 
+    font-weight: 600; 
+    font-size: 1.1rem; 
+    letter-spacing: 0.5px; 
+    -webkit-font-smoothing: antialiased; 
+    
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease; 
+}
+
+.btn-large:hover, .btn-large:active { 
+    transform: translateY(-3px) scale(1.02); 
+    box-shadow: var(--shadow-hover); 
+}
+
+
+.btn-outline { background: transparent; color: var(--brand-green); border: 2px solid var(--brand-green); padding: 15px; border-radius: 12px; cursor: pointer; font-weight: 600; font-family: 'Outfit', sans-serif; transition: all 0.2s; }
+.btn-outline:hover { background: rgba(16, 185, 129, 0.1); }
 
 
 
@@ -332,6 +492,7 @@ input:checked + .slider { background-color: var(--brand-green); }
 input:checked + .slider:before { transform: translateX(20px); }
 
 
+.theme-swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 12px; padding: 16px; max-height: 250px; overflow-y: auto; }
 .theme-swatch { width: 100%; aspect-ratio: 1; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s, border-color 0.2s; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05); }
 .theme-swatch:hover { transform: scale(1.1); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .theme-swatch.active { border: 2px solid var(--text-main); transform: scale(1.1); }
@@ -676,6 +837,14 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 
 
+.btn-outline {
+    box-sizing: border-box; 
+    width: 100%;            
+    display: block;         
+    margin: 0;              
+}
+
+
 .form-group {
     width: 100%;
     box-sizing: border-box;
@@ -862,6 +1031,39 @@ input:checked + .slider:before { transform: translateX(20px); }
 .status-out-for-delivery { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
 .status-delivered { background: rgba(16, 185, 129, 0.1); color: var(--brand-green); }
 .status-cancelled { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+
+.chat-input-area input {
+    background-color: var(--bg-light) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 20px !important;
+
+    color: var(--text-primary) !important;
+    caret-color: var(--text-primary) !important;
+
+    padding: 14px 20px !important;
+    font-family: 'Outfit', sans-serif;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+body.dark .chat-input-area input{
+   color: #ffffff !important;
+   caret-color: #ffffff !important;
+}
+
+
+
+.chat-input-area input:focus {
+    border-color: var(--brand-green) !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+
+.chat-input-area input::placeholder{
+    color: var(--text-muted);
+    opacity: 0.7;
+}
 
 
 #bmi-score-container {
@@ -1092,6 +1294,27 @@ button:disabled {
     flex: 1;
 }
 
+/* --- Clean Responsive Menu Grid --- */
+.menu-grid {
+    display: grid;
+    gap: 16px;
+    padding: 16px;
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+    .menu-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Desktop */
+@media (min-width: 1200px) {
+    .menu-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
 
 #cart-footer{
   transition: all .25s ease;
@@ -1100,8 +1323,40 @@ button:disabled {
 
 
 /* =====================================================
+   TOP HEADER & BOTTOM NAV DYNAMIC THEME FIX
+===================================================== */
+:root {
+    /* Tie the nav background to the active theme with an 85% glassmorphism opacity */
+    --nav-bg: color-mix(in srgb, var(--card-bg) 85%, transparent) !important;
+}
+
+/* Ensure backgrounds apply correctly */
+.app-header, 
+.bottom-nav {
+    background: var(--nav-bg) !important;
+}
+
+/* Force icons, text, and buttons in the header to respect dark/light text colors */
+.app-header .brand,
+.app-header .header-icon-btn,
+.app-header .veg-label,
+.bottom-nav .nav-item {
+    color: var(--text-main) !important;
+}
+
+/* Keep the active state green in the bottom nav */
+.bottom-nav .nav-item.active {
+    color: var(--brand-green) !important;
+}
+
+/* =====================================================
    SIDEBAR & THEME ALIGNMENT FIXES
 ===================================================== */
+
+/* 2. Remove default padding so the bottom elements can hit the edges */
+.side-menu-links {
+    padding-bottom: 0 !important; 
+}
 
 /* 3. Push the entire Team Prober + Logout block to the absolute bottom */
 .side-menu-links > div:last-child {
@@ -1158,6 +1413,17 @@ button:disabled {
     border-radius: 16px; /* Adjust to match your design */
     overflow: hidden;
 }
+
+/* Reduce button size to save vertical space */
+.btn-large {
+    padding: 12px 20px !important; /* Slimmer button[cite: 4] */
+    font-size: 0.95rem !important;
+    min-height: 44px !important;
+}
+
+
+
+
 
 /* Ensure the mission toggle remains clean in a full-span card */
 .mission-collapse {
@@ -1326,7 +1592,61 @@ button:disabled {
 .side-cat-pill i, .side-cat-pill span {
     color: inherit !important;
 }
+.font-pill {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-light);
+    color: var(--text-main);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
 
+.font-pill.active {
+    background: var(--brand-green);
+    color: white;
+    border-color: var(--brand-green);
+}
+
+.theme-swatch-grid .theme-box {
+    width: 100% !important;
+    aspect-ratio: 1;
+    border-radius: 10px;
+}
+
+/* Font selection button styling */
+.font-pill {
+    flex: 1;
+    padding: 10px 5px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: inherit; /* Shows the button's own font */
+}
+
+/* Specific button font previews */
+#font-outfit { font-family: 'Outfit', sans-serif; }
+#font-roboto { font-family: 'Roboto', sans-serif; }
+#font-montserrat { font-family: 'Montserrat', sans-serif; }
+
+.font-pill.active {
+    background: rgba(16, 185, 129, 0.1);
+    border: 2px solid var(--brand-green);
+    color: var(--brand-green);
+}
+
+/* Ensure global body uses the variable */
+body {
+    font-family: var(--app-font, 'Outfit'), sans-serif !important;
+}
 /* Ensure the main container fills the space between Header and Nav */
 .admin-main {
     flex: 1 1 0 !important;
@@ -1949,6 +2269,49 @@ button:disabled {
 
 
 /* =====================================================
+   CORE LAYOUT LOCK (Admin-Style Structure)
+===================================================== */
+html, body {
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+body {
+    background: var(--bg-light);
+    color: var(--text-main);
+    font-family: var(--app-font, 'Outfit'), sans-serif !important;
+}
+
+.app-header, .bottom-nav {
+    flex-shrink: 0 !important;
+    height: 75px !important;
+    z-index: 1000 !important;
+    background: var(--nav-bg) !important;
+}
+
+.app-header .brand,
+.app-header .header-icon-btn,
+.app-header .veg-label,
+.bottom-nav .nav-item {
+    color: var(--text-main) !important;
+}
+
+.bottom-nav .nav-item.active {
+    color: var(--brand-green) !important;
+}
+
+main {
+    flex: 1 1 0 !important; 
+    min-height: 0 !important; 
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* =====================================================
    GLOBAL VARIABLES & THEME
 ===================================================== */
 :root { 
@@ -1988,6 +2351,25 @@ p, label { color: var(--text-muted); }
 
 .header-veg-wrapper { display: none; align-items: center; gap: 8px; font-weight: 600; margin-left: auto; margin-right: 15px; }
 @media (min-width: 768px) { .header-veg-wrapper { display: flex; } }
+
+.btn-large { 
+    background: var(--brand-green); color: white; border: none; 
+    padding: 12px 20px !important; border-radius: 14px; cursor: pointer; 
+    font-weight: 600; font-size: 1rem !important; min-height: 48px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: var(--shadow-sm); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease; 
+}
+.btn-large:hover, .btn-large:active { transform: translateY(-3px) scale(1.02); box-shadow: var(--shadow-hover); }
+
+.btn-outline { background: transparent; color: var(--brand-green); border: 2px solid var(--brand-green); padding: 15px; border-radius: 12px; cursor: pointer; font-weight: 600; box-sizing: border-box; width: 100%; display: block; margin: 0; transition: all 0.2s; }
+.btn-outline:hover { background: rgba(16, 185, 129, 0.1); }
+
+.spinner {
+    width: 30px; height: 30px;
+    border: 3px solid rgba(16, 185, 129, 0.2); border-top: 3px solid #10b981; 
+    border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px; display: block; 
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 /* =====================================================
    GLOBAL FORM CONTAINERS
@@ -2154,7 +2536,7 @@ p, label { color: var(--text-muted); }
 }
 .close-btn:hover { background: #ef4444 !important; color: white !important; border-color: #ef4444 !important; transform: scale(1.05); }
 
-.side-menu-links, #cart-items-container { -ms-overflow-style: none; flex: 1 1 auto !important; overflow-y: auto !important; padding: 0 !important; scrollbar-width: none; }
+.side-menu-links, #cart-items-container { flex: 1 1 auto !important; overflow-y: auto !important; padding: 0 !important; -ms-overflow-style: none; scrollbar-width: none; }
 .side-menu-links::-webkit-scrollbar, #cart-items-container::-webkit-scrollbar { display: none; }
 
 .menu-row-btn { display: flex; align-items: center; gap: 12px; background: transparent; border: none; width: 100%; text-align: left; padding: 16px; font-size: 1.05rem; font-weight: 600; color: var(--text-main); border-radius: 12px; cursor: pointer; transition: background 0.2s; }
@@ -2168,15 +2550,14 @@ p, label { color: var(--text-muted); }
 input:checked + .slider { background-color: var(--brand-green); }
 input:checked + .slider:before { transform: translateX(20px); }
 
-.theme-swatch-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); max-height: 250px; overflow-y: auto; padding: 16px; }
-.theme-swatch-grid .theme-box { aspect-ratio: 1; border: 2px solid transparent; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s, border-color 0.2s; width: 100% !important; }
+.theme-swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 12px; padding: 16px; max-height: 250px; overflow-y: auto; }
+.theme-swatch-grid .theme-box { width: 100% !important; aspect-ratio: 1; border-radius: 10px; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s, border-color 0.2s; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05); }
 .theme-swatch-grid .theme-box:hover { transform: scale(1.1); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .theme-swatch-grid .theme-box.active { border: 2px solid var(--text-main); transform: scale(1.1); }
 
-.font-pill { background: var(--bg-light); border-radius: 10px; color: var(--text-main); cursor: pointer; flex: 1; font-family: inherit; font-size: 0.8rem; font-weight: 700; padding: 10px 5px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.font-pill { flex: 1; padding: 10px 5px; background: var(--bg-light); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); font-family: inherit; }
 #font-outfit { font-family: 'Outfit', sans-serif; }
 #font-roboto { font-family: 'Roboto', sans-serif; }
-#font-montserrat { font-family: 'Montserrat', sans-serif; }
 .font-pill.active { background: rgba(16, 185, 129, 0.1); border: 2px solid var(--brand-green); color: var(--brand-green); }
 
 #cart-footer { flex-shrink: 0 !important; padding: 20px !important; border-top: 1px solid var(--border-color) !important; background: var(--card-bg) !important; border-radius: 0 0 24px 24px !important; transition: all .25s ease; }
@@ -2801,12 +3182,13 @@ body.dark .chat-input-area input { color: #ffffff !important; caret-color: #ffff
 
 .btn-outline {
     background: transparent !important;
-    border: 2px dashed rgba(16, 185, 129, 0.3) !important;
-    border-radius: 12px !important;
     color: var(--brand-green) !important;
     font-weight: 700 !important;
-    margin: 16px 0 !important;
     padding: 12px !important;
+    margin: 16px 0 !important;
+    border-radius: 12px !important;
+    /* Subtle dashed design to show it's an optional action */
+    border: 2px dashed rgba(16, 185, 129, 0.3) !important;
     transition: all 0.2s ease !important;
 }
 
@@ -2860,837 +3242,4 @@ body.dark .chat-input-area input { color: #ffffff !important; caret-color: #ffff
 .builder-card.selected {
     background: var(--brand-green) !important;
     box-shadow: 0 0 15px rgba(16, 185, 129, 0.3) !important;
-}/* Add this to app.css */
-.input-error {
-    border: 2px solid #ef4444 !important; /* Bright Red Border */
-    background: rgba(239, 68, 68, 0.05) !important; /* Subtle Red Tint */
-}
-
-.input-error::placeholder {
-    color: #ef4444 !important; /* Red text inside the box */
-    font-weight: 700;
-}
-
-/* Fixed Pointer UI */
-.fixed-map-pointer {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -100%); /* Keeps tip of pin at center */
-    z-index: 10001;
-    pointer-events: none; /* Allows map dragging through the pin */
-    color: #ef4444; /* Prober Alert Red */
-    font-size: 2.5rem;
-    text-shadow: 0 4px 10px rgba(0,0,0,0.3);
-}
-
-.pin-shadow {
-    width: 10px;
-    height: 4px;
-    background: rgba(0,0,0,0.2);
-    border-radius: 50%;
-    margin: -5px auto 0;
-}
-
-/* Ensure map modal follows your modern design */
-#map-modal {
-    display: flex;
-    flex-direction: column;
-}
-
-.btn-hero-primary {
-    width: 100%;
-    margin-top: 20px;
-    background: var(--brand-green);
-    color: #ffffff;
-    border: none;
-    padding: 16px;
-    border-radius: 14px;
-    font-family: 'Outfit', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 800;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
-}
-
-/* The Bright Hover Animation */
-.btn-hero-primary:hover:not(:disabled) {
-    filter: brightness(1.2); /* Brightens the actual color */
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-}
-
-/* Disabled/Spam-Prevention State */
-.btn-hero-primary:disabled {
-    background: var(--border-color);
-    color: var(--text-muted);
-    cursor: not-allowed;
-    box-shadow: none;
-    transform: none;
-}
-
-
-
-/* =====================================================
-   UX FIX: IMMOVABLE BUTTONS & NO GREEN GLOW
-===================================================== */
-button, 
-.btn-large, 
-.btn-outline, 
-.menu-item, 
-.builder-card, 
-.nav-item, 
-.location-picker-btn,
-.btn-hero-primary {
-    transform: none !important; /* Locks movement globally */
-    transition: filter 0.2s ease, background 0.2s ease, color 0.2s ease !important;
-}
-
-/* Kills the glow, adds brightness */
-button:hover:not(:disabled), 
-.btn-large:hover:not(:disabled), 
-.btn-outline:hover:not(:disabled), 
-.menu-item:hover, 
-.builder-card:hover,
-.location-picker-btn:hover,
-.btn-hero-primary:hover:not(:disabled) {
-    transform: none !important;
-    box-shadow: none !important; /* Completely removes green glow */
-    filter: brightness(1.2) !important; /* Increases hue brightness */
-}
-
-/* Active (Click) state - slightly darker to register the click */
-button:active:not(:disabled), 
-.btn-large:active:not(:disabled), 
-.menu-item:active, 
-.builder-card:active {
-    transform: none !important;
-    filter: brightness(0.9) !important;
-}
-
-/* Keep the selected builder card recognizable without an outer glow */
-.builder-card.selected {
-    box-shadow: inset 0 0 0 2px var(--brand-green) !important;
-}
-
-/* =====================================================
-   RESTORE STICKY CART CENTERING
-===================================================== */
-.sticky-cart-bar {
-    transform: translateX(-50%) !important;
-}
-
-.sticky-cart-bar:hover {
-    transform: translateX(-50%) !important; 
-    filter: brightness(1.1) !important;
-}
-
-.sticky-cart-bar:active {
-    /* Keeps it centered while giving it a tiny 1px click depression */
-    transform: translateX(-50%) translateY(1px) !important; 
-    filter: brightness(0.9) !important;
-}
-
-/* =====================================================
-   FIX: MAP MODAL Z-INDEX (Prevent hiding behind checkout)
-===================================================== */
-#map-modal {
-    z-index: 100005 !important; /* Forces Map to sit above Checkout (100000) */
-}
-
-/* Temporarily boosts the dark overlay when the map is open */
-#menu-overlay {
-    z-index: 100004 !important; 
-}
-
-/* =====================================================
-   FIX: MAP VISIBILITY & SIZING (Matches Checkout Modal)
-===================================================== */
-#map-modal {
-    width: calc(100% - 32px) !important;
-    max-width: 420px !important;
-    height: 480px !important; /* Matches the visual size of the checkout box */
-    display: flex !important;
-    flex-direction: column !important;
-}
-
-#map-container-wrapper {
-    flex: 1 1 auto !important; /* Fills all the space between header and button */
-    min-height: 250px !important; /* Failsafe to prevent height collapse */
-    width: 100% !important;
-    position: relative !important;
-}
-
-#map-picker {
-    height: 100% !important;
-    width: 100% !important;
-    background: #e5e7eb !important; /* Shows a grey placeholder before tiles load */
-    z-index: 1 !important; /* Ensures the map stays under your red ghost pin */
-}
-
-
-/* =====================================================
-   MAP MODAL UI (Footer & Locate Me Button)
-===================================================== */
-
-/* Floating GPS button over the map */
-.locate-me-btn {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--card-bg);
-    color: var(--text-main);
-    border: 1px solid var(--border-color);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-    cursor: pointer;
-    z-index: 1000; /* Ensures it sits above Leaflet map tiles */
-}
-
-/* Inherit your existing immovable hover rules */
-.locate-me-btn:hover {
-    filter: brightness(1.2);
-}
-.locate-me-btn:active {
-    filter: brightness(0.9);
-}/* =====================================================
-   MAP MODAL: CONFIRM BUTTON STYLING
-===================================================== */
-.map-modal-footer {
-    padding: 20px 24px;
-    background: var(--card-bg);
-    border-top: 1px solid var(--border-color);
-    border-radius: 0 0 24px 24px;
-    flex-shrink: 0;
-}
-
-.map-confirm-btn {
-    width: 100% !important;
-    margin: 0 !important;
-    background: var(--brand-green) !important; /* Uses your active theme's primary color */
-    color: #ffffff !important;
-    border: none !important;
-    padding: 16px !important;
-    border-radius: 14px !important;
-    font-family: 'Outfit', sans-serif !important;
-    font-size: 1.1rem !important;
-    font-weight: 800 !important;
-    cursor: pointer !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
-}
-
-/* Ensure the hover state matches our new anti-jump brightness rule */
-.map-confirm-btn:hover {
-    filter: brightness(1.15) !important;
-}
-
-.map-confirm-btn:active {
-    filter: brightness(0.9) !important;
-}
-
-
-/* =====================================================
-   ORDER CONFIRMATION: TRACK BUTTON STYLING
-===================================================== */
-.order-track-btn {
-    width: 100% !important;
-    margin: 0 !important;
-    background: var(--brand-green) !important; /* Uses your active theme's primary color */
-    color: #ffffff !important;
-    border: none !important;
-    padding: 16px !important;
-    border-radius: 14px !important;
-    font-family: 'Outfit', sans-serif !important;
-    font-size: 1.1rem !important;
-    font-weight: 800 !important;
-    cursor: pointer !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
-    transform: none !important; /* Prevents jumping */
-    transition: filter 0.2s ease !important;
-}
-
-/* Inherit the new anti-jump brightness rules */
-.order-track-btn:hover {
-    filter: brightness(1.15) !important;
-}
-
-.order-track-btn:active {
-    filter: brightness(0.9) !important;
-}
-
-/* =====================================================
-   FIX: TOUCH BLOCKED (Pull Side Menus in front of Overlay)
-===================================================== */
-.side-menu {
-    z-index: 100005 !important; 
-}
-
-/* =====================================================
-   BUTTON DESIGN SYSTEM (White, Dashed, and Pill styles)
-===================================================== */
-/* Solid White Rectangular Button (Calculate & Builder) */
-.btn-white-rect {
-    background: #ffffff !important;
-    color: #111827 !important;
-    border: none !important;
-    border-radius: 12px !important;
-    padding: 16px !important;
-    font-size: 1.1rem !important;
-    font-weight: 800 !important;
-    width: 100%;
-    cursor: pointer !important;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1) !important;
-    transition: filter 0.2s ease !important;
-    transform: none !important; /* Overrides global lock */
-}
-
-/* Solid White Pill Button (Browse Menu) */
-.btn-white-pill {
-    background: #ffffff !important;
-    color: #111827 !important;
-    border: none !important;
-    border-radius: 99px !important;
-    padding: 12px 36px !important;
-    font-size: 1.05rem !important;
-    font-weight: 800 !important;
-    cursor: pointer !important;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
-    transition: filter 0.2s ease !important;
-    transform: none !important;
-}
-/* =====================================================
-   FIX: MENU BUTTONS (Theme Colors & Locked Shape)
-===================================================== */
-
-/* Menu Item: Dashed "+ Add" Button */
-.btn-add-dashed {
-    background: transparent !important;
-    border: 2px dashed var(--brand-green) !important;
-    color: var(--brand-green) !important; /* FIX: Now follows dynamic theme */
-    border-radius: 14px !important;
-    padding: 0 24px !important;
-    height: 38px !important; /* FIX: Locks height so it never stretches */
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    white-space: nowrap !important; /* FIX: Stops "+ Add" from wrapping to 2 lines */
-    font-weight: 800 !important;
-    font-size: 0.95rem !important;
-    cursor: pointer !important;
-}
-
-/* Menu Item: Solid Quantity Selector (+ / -) */
-.btn-quantity-solid {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    background: var(--brand-green) !important; /* FIX: Now follows dynamic theme */
-    border-radius: 14px !important;
-    width: 90px !important;
-    height: 38px !important; /* Matches the dashed button perfectly */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; /* Neutral shadow to fit all themes */
-    padding: 0 !important;
-}
-
-.btn-quantity-solid button {
-    background: transparent !important;
-    border: none !important;
-    color: #ffffff !important;
-    width: 32px !important;
-    height: 100% !important;
-    cursor: pointer !important;
-    font-weight: 900 !important;
-    font-size: 1.2rem !important;
-    box-shadow: none !important;
-    transform: none !important;
-}
-
-.btn-quantity-solid span {
-    color: #ffffff !important;
-    font-weight: 800 !important;
-    font-size: 1.05rem !important;
-}
-/* =====================================================
-   THE JUMP ANIMATION (For the "+ Add" Button)
-===================================================== */
-@keyframes jumpBounce {
-    0%   { transform: translateY(0); }
-    30%  { transform: translateY(-8px); }
-    50%  { transform: translateY(0); }
-    70%  { transform: translateY(-4px); }
-    100% { transform: translateY(0); }
-}
-
-.jump-btn {
-    transform: translateY(0) !important; /* Unlocks the global immovable rule */
-}
-
-/* Jumps when hovered (Before clicking) */
-.jump-btn:hover {
-    animation: jumpBounce 0.6s ease infinite !important;
-}
-
-/* Jumps and darkens when tapped (After clicking) */
-.jump-btn:active {
-    animation: jumpBounce 0.3s ease !important;
-    filter: brightness(0.8) !important;
-}
-
-/* =====================================================
-   WHATSAPP-STYLE EMPTY STATE (Cart & Orders)
-===================================================== */
-.empty-state-view {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 60vh; /* Fills screen vertically */
-    text-align: center;
-    padding: 0 24px;
-}
-
-.empty-icon-wrapper {
-    font-size: 4.5rem;
-    color: var(--brand-green);
-    margin-bottom: 24px;
-    background: rgba(16, 185, 129, 0.1); /* Soft background circle like the lock icon */
-    width: 140px;
-    height: 140px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-}
-
-.empty-state-view h2 {
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: var(--text-main);
-    margin-bottom: 8px;
-}
-
-.empty-state-view p {
-    font-size: 0.95rem;
-    color: var(--text-muted);
-    max-width: 280px;
-    line-height: 1.5;
-    margin-bottom: 32px;
-}
-
-
-/* =====================================================
-   PREMIUM LOGIN BUTTON STYLING
-===================================================== */
-.btn-login-premium {
-    width: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 12px !important;
-    background: var(--brand-green) !important;
-    color: #ffffff !important;
-    border: none !important;
-    padding: 16px 20px !important;
-    border-radius: 16px !important;
-    font-family: 'Outfit', sans-serif !important;
-    font-size: 1.1rem !important;
-    font-weight: 800 !important;
-    cursor: pointer !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
-    transform: none !important; /* Immovable rule */
-    transition: filter 0.2s ease !important;
-}
-
-.btn-login-premium:hover {
-    filter: brightness(1.15) !important; /* No green glow, just brightens */
-}
-
-.btn-login-premium:active {
-    filter: brightness(0.9) !important;
-}
-
-/* =====================================================
-   INLINE THEME SWATCHES (Circular)
-===================================================== */
-/* Make the boxes slightly smaller and circular so they fit nicely on one row */
-.theme-box {
-    width: 28px !important;
-    height: 28px !important;
-    border-radius: 50% !important; 
-    border: 2px solid transparent;
-    cursor: pointer;
-    box-sizing: border-box;
-    transition: transform 0.2s ease, border-color 0.2s ease !important;
-}
-
-/* Give the active theme a clean ring around it */
-.theme-box.active {
-    transform: scale(1.15) !important;
-    border-color: var(--text-main) !important;
-    box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 4px var(--text-main) !important;
-}
-
-.theme-box:hover {
-    transform: scale(1.1) !important;
-}
-
-/* =====================================================
-   PREMIUM CHAT SCREEN (Contact Us)
-===================================================== */
-#chat-screen {
-    padding: 0 !important; /* Edge to edge layout */
-    display: none;
-    flex-direction: column;
-    background: var(--bg-light);
-    height: 100% !important;
-    overflow: hidden !important;
-}
-
-#chat-screen.active {
-    display: flex !important;
-}
-
-/* Header */
-.chat-header-modern {
-    background: var(--card-bg);
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-shrink: 0;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.02);
-    z-index: 10;
-}
-
-.chat-header-modern .back-btn {
-    background: transparent !important;
-    border: none !important;
-    color: var(--text-main) !important;
-    font-size: 1.2rem !important;
-    cursor: pointer !important;
-    padding: 0 !important;
-    box-shadow: none !important;
-}
-
-.chat-header-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.chat-avatar {
-    width: 40px;
-    height: 40px;
-    background: rgba(16, 185, 129, 0.1);
-    color: var(--brand-green);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-}
-
-/* Messages Area */
-.chat-messages-area {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-/* Chat Bubbles */
-.message-bubble {
-    padding: 14px 18px;
-    border-radius: 20px;
-    font-size: 0.95rem;
-    line-height: 1.4;
-    max-width: 75%;
-    word-wrap: break-word;
-    font-family: 'Outfit', sans-serif;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-    position: relative;
-    font-weight: 500;
-}
-
-.message-user {
-    align-self: flex-end;
-    background: var(--brand-green);
-    color: white;
-    border-bottom-right-radius: 4px; /* Gives it the chat 'tail' effect */
-}
-
-.message-admin {
-    align-self: flex-start;
-    background: var(--card-bg);
-    color: var(--text-main);
-    border: 1px solid var(--border-color);
-    border-bottom-left-radius: 4px;
-}
-
-/* Input Area */
-.chat-input-container {
-    background: var(--card-bg);
-    padding: 16px 20px;
-    border-top: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-shrink: 0;
-}
-
-.chat-input-container input {
-    flex: 1;
-    background: var(--bg-light) !important;
-    border: 1px solid var(--border-color) !important;
-    padding: 16px 20px !important;
-    border-radius: 24px !important;
-    font-size: 1rem !important;
-    color: var(--text-main) !important;
-    font-family: 'Outfit', sans-serif !important;
-}
-
-.chat-input-container input:focus {
-    outline: none;
-    border-color: var(--brand-green) !important;
-    box-shadow: inset 0 0 0 1px var(--brand-green) !important;
-}
-
-/* Send Button */
-.chat-input-container .send-btn {
-    width: 52px !important;
-    height: 52px !important;
-    border-radius: 50% !important;
-    background: var(--brand-green) !important;
-    color: white !important;
-    border: none !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 1.2rem !important;
-    cursor: pointer !important;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25) !important;
-    flex-shrink: 0 !important;
-    padding-right: 3px !important; /* Visual optical alignment for the paper-plane */
-}
-
-/* =====================================================
-   DIET SCREEN: DYNAMIC SPLIT ANIMATION & HOME-BOX UI
-===================================================== */
-#diet.screen {
-    padding: 24px 16px !important;
-    display: none;
-    align-items: center; /* Centers vertically */
-}
-#diet.screen.active {
-    display: flex !important;
-}
-
-/* The Layout Wrapper */
-.diet-dynamic-wrapper {
-    display: flex;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    gap: 24px;
-    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-    justify-content: center; /* Centered initially */
-}
-
-/* INITIAL STATE (Centered) */
-.diet-dynamic-wrapper.state-initial .diet-left-panel {
-    width: 100%;
-    max-width: 480px; /* Perfect width for a centered calculator */
-}
-
-.diet-dynamic-wrapper.state-initial .diet-right-panel {
-    display: none;
-    opacity: 0;
-    width: 0;
-}
-
-/* CALCULATED STATE (Split Screen - PC/Tablet) */
-@media (min-width: 768px) {
-    .diet-dynamic-wrapper.state-calculated {
-        justify-content: flex-start;
-        align-items: stretch; /* Stretch to fill height */
-    }
-    .diet-dynamic-wrapper.state-calculated .diet-left-panel {
-        width: 400px;
-        flex-shrink: 0;
-    }
-    .diet-dynamic-wrapper.state-calculated .diet-right-panel {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        opacity: 1;
-        width: auto;
-        animation: slideInRight 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    }
-}
-
-/* CALCULATED STATE (Stacked - Mobile) */
-@media (max-width: 767px) {
-    .diet-dynamic-wrapper {
-        flex-direction: column;
-        align-items: stretch;
-        justify-content: flex-start;
-    }
-    .diet-dynamic-wrapper.state-calculated .diet-right-panel {
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-        opacity: 1;
-        animation: fadeUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    }
-}
-
-@keyframes slideInRight {
-    from { opacity: 0; transform: translateX(40px); }
-    to { opacity: 1; transform: translateX(0); }
-}
-
-/* -------------------------------------------
-   THE "HOME SCREEN" BOX STYLING
-------------------------------------------- */
-/* Matches the exact shape of the Home Pitch Card */
-.diet-hero-card {
-    background: var(--card-bg);
-    padding: 40px;
-    border-radius: 0 !important; /* Forces the squared-off look */
-    border: 1px solid rgba(128, 128, 128, 0.1) !important;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    box-sizing: border-box;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.05);
-}
-
-.diet-results-card {
-    background: transparent;
-    height: 100%;
-    padding: 10px 0;
-}
-
-/* Input Styling (Dark, rounded, clean borders) */
-.diet-hero-card input, 
-.diet-hero-card select {
-    background: var(--bg-light) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 12px !important;
-    padding: 16px !important;
-    color: var(--text-main) !important;
-    font-size: 1rem !important;
-    font-weight: 500;
-    width: 100%;
-    box-sizing: border-box;
-    margin-bottom: 16px;
-    font-family: 'Outfit', sans-serif;
-    transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.diet-hero-card input:focus, 
-.diet-hero-card select:focus {
-    border-color: var(--brand-green) !important;
-    box-shadow: inset 0 0 0 1px var(--brand-green) !important;
-    outline: none;
-}
-
-/* History Grid for Split View */
-.history-grid-split {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-}
-@media (min-width: 1024px) {
-    .history-grid-split { grid-template-columns: 1fr 1fr; }
-}
-/* =====================================================
-   FIX: ALIGN RECOMMENDED BOWLS HEIGHT
-===================================================== */
-.bento-recommendations {
-    align-items: stretch !important; /* Forces all cards in a row to match height */
-}
-
-.rec-card, .rec-card-custom {
-    aspect-ratio: auto !important; /* Removes the strict square constraint */
-    height: 100% !important;
-    min-height: 150px !important;
-}
-
-/* =====================================================
-   UX FIX: MOVE MENU SIDEBAR TO TOP BAR
-===================================================== */
-/* 1. Change the layout from Side-by-Side to Top-and-Bottom */
-.menu-layout-split {
-    flex-direction: column !important;
-}
-
-/* 2. Convert the vertical sidebar into a horizontal top bar */
-.menu-sidebar {
-    width: 100% !important;
-    height: auto !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    padding: 12px 16px !important;
-    border-right: none !important;
-    border-bottom: 1px solid var(--border-color) !important;
-    
-    /* Allow horizontal swiping for categories */
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    -ms-overflow-style: none;  
-    scrollbar-width: none;  
-    gap: 12px !important;
-}
-
-/* Hide the scrollbar for a clean look */
-.menu-sidebar::-webkit-scrollbar {
-    display: none; 
-}
-
-/* 3. Reformat the "Veg Only" Toggle for horizontal alignment */
-.sidebar-footer-toggle {
-    flex-direction: row !important;
-    padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
-    border-bottom: none !important;
-    
-    /* Add a divider line to the right instead of bottom */
-    border-right: 1px solid var(--border-color) !important;
-    padding-right: 16px !important;
-    margin-right: 4px !important;
-    flex-shrink: 0 !important;
-    gap: 8px !important;
-}
-
-/* 4. Convert the vertical category buttons into modern horizontal pills */
-.side-cat-pill {
-    flex-direction: row !important;
-    width: auto !important;
-    padding: 10px 20px !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-    border-radius: 99px !important; /* Perfect pill shape */
-    box-shadow: none !important; /* Keeps it flat and clean */
-}
-
-/* Make the active category pop slightly more in the new layout */
-.side-cat-pill.active {
-    background: var(--brand-green) !important;
-    color: white !important;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
-}
-
-/* Ensure the icon inside the active pill turns white */
-.side-cat-pill.active i, .side-cat-pill.active span {
-    color: white !important;
 }

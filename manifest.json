@@ -2,9 +2,10 @@
   "name": "Prober",
   "short_name": "Prober",
   "start_url": "/",
+
+  "theme_color": "#111827",
+  "background_color": "#111827",
   "display": "standalone",
-  "background_color": "#fbfbfc",
-  "theme_color": "#10b981",
   "description": "High Protein, High Fiber meal delivery service.",
   "icons": [
     {
@@ -18,4 +19,5 @@
       "type": "image/png"
     }
   ]
+
 }

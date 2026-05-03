@@ -1,43 +1,31 @@
-<!-- Cleaned index.html: comments removed and rewritten below -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta name="theme-color" content="#111827"> 
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Prober</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="app.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="shared.css">
+    <link rel="stylesheet" href="app.css">
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
-    <header class="app-header">
-        <div class="brand" onclick="switchScreen('home')" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+
+<header class="app-header">
+        <!-- Change this line in the <header> of index_2.html -->
+    <div class="brand" onclick="handleLogoClick()" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
              <img src="icons/icon-192.png" style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover;" alt="Prober Logo">
-                PROBER
+             <span>PROBER</span>
         </div>
         
-        <div class="header-controls">
-           
-            <button class="header-icon-btn theme-open-btn"
-        onclick="toggleThemeDropdown(event)">
-            <i class="fas fa-palette"></i>
-        </button>
-
-            <div class="veg-toggle-group">
-                <i class="fas fa-leaf" style="color: var(--brand-green);"></i>
-                <span class="veg-label">Veg</span>
-                <label class="switch" style="margin: 0;">
-                    <input type="checkbox" id="header-veg-toggle" onchange="handleVegToggle(this)">
-                    <span class="slider round"></span>
-                </label>
-            </div>
+    <div class="header-controls">
 
             <button class="header-icon-btn position-relative" onclick="toggleCart()">
                 <i class="fas fa-shopping-cart"></i>
@@ -50,532 +38,512 @@
         </div>
 </header>
 
-<div id="offline-banner" style="display: none; position: fixed; top: 75px; left: 0; right: 0; background: #ef4444; color: white; text-align: center; padding: 10px; z-index: 99; font-size: 0.9rem; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-    <i class="fas fa-wifi" style="margin-right: 8px;"></i> You are currently offline.
+<div id="offline-banner" style="display: none; position: fixed; top: 75px; left: 0; right: 0; background: #ef4444; color: white; text-align: center; padding: 10px; z-index: 999; font-size: 0.9rem; font-weight: 600;">
+        <i class="fas fa-wifi" style="margin-right: 8px;"></i> Connection Lost
 </div>
 
-<div id="menu-overlay" class="overlay hidden"> 
-</div>
+<main class="admin-main">  
 
-<div id="home" class="screen">
-        <div class="hero-layout">
-            <div class="hero-text-content">
-                
-                <div id="home-greeting-container" style="display: none; align-items: center; gap: 12px; margin-bottom: 20px; background: var(--card-bg); padding: 12px 16px; border-radius: 16px; border: 1px solid var(--border-color); width: fit-content;">
-                    <div style="background: var(--brand-green); color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem;" id="greeting-initial">
-                        P
-                    </div>
-                    <div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Welcome back,</div>
-                        <div style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);" id="greeting-name">User</div>
-                    </div>
-                </div>
+<!-- HOME SCREEN -->
+<section id="home" class="screen active">
+    <div class="hero-layout">
+        
+        <!-- SIDE PANEL (PC: 1/2 | Mobile: Top) -->
+        <div class="hero-text-content">
+            <div class="pitch-card">
+                <h1 style="font-size: 2rem; font-weight: 900; margin-bottom: 20px;">
+                    PROTEIN & FIBER FOCUSED
+                </h1>
 
-                <div class="pitch-card">
-                    <p><strong>We live in a carb-heavy world.</strong> It’s cheap, easy, and dominates our plates—leaving us starving for essential <strong>Protein</strong> and <strong>Fiber</strong>.</p>
-                    <p>After poor digestion took a toll on my own health, I went looking for a meal service that valued gut health just as much as hitting macros.</p>
-                    <p>It didn't exist. So, I built it.</p>
-                    
-                    <ul class="pitch-list">
-                        <li>💪 <strong>High Protein</strong> for peak Performance.</li>
-                        <li>🥦 <strong>High Fiber</strong> to heal the Gut.</li>
-                        <li>💧 <strong>Healthy Fats</strong> from Ghee, Olive and Sesame Oil.</li>
-                    </ul>
-                    <div class="mission-card" style="margin-top: 20px; padding: 16px; background: rgba(16, 185, 129, 0.05); border-radius: 16px; border: 1px dashed var(--brand-green);">
-    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-        <i class="fas fa-paw" style="color: var(--brand-green);"></i>
-        <span style="font-weight: 800; font-size: 0.9rem; color: var(--text-main); text-transform: uppercase;">Our Bigger Mission</span>
+                <button id="home-view-menu-btn" class="btn-hero-primary" onclick="handleViewMenuClick(this)">
+    View Menu
+</button>
+            </div>
+        </div>
+
+        <!-- MAIN RIGHT PANEL (Pure CSS Coming Soon) -->
+<div class="hero-visual-content">
+    <div class="coming-soon-ui">
+        <div class="status-badge">COMING SOON</div>
+        <h2>New High-Protein<br>Bowls Dropping Soon</h2>
+        <p>We are perfecting the macros. Stay tuned!</p>
     </div>
-    <p style="font-size: 0.85rem; line-height: 1.4;">Every meal you order helps us get one step closer to establishing a permanent sanctuary for stray dogs and cats. We're currently fostering rescues right here in Visakhapatnam.</p>
 </div>
-                    <button class="btn-large" style="width: 100%; margin-top: 10px;" onclick="switchScreen('menu')">View Menu</button>
-                </div>
+
+    </div>
+</section>
+<!-- MENU SCREEN -->
+<section id="menu" class="screen">
+    <div class="menu-layout-split">
+        
+        <!-- SIDEBAR (Fixed Vertical Bar) -->
+        <aside class="menu-sidebar">
+            <!-- Veg Toggle Section -->
+            <div class="sidebar-footer-toggle">
+                <i class="fas fa-leaf" style="color: var(--brand-green);"></i>
+                <span style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Veg Only</span>
+                <label class="switch">
+                    <input type="checkbox" id="sidebar-veg-toggle" onchange="handleVegToggle(this)">
+                    <span class="slider round"></span>
+                </label>
             </div>
 
-            <div class="hero-visual-content">
-                <div class="carousel-container" id="hero-carousel">
-                    <div class="carousel-track" id="carousel-track">
-                       <img src="assets/coming-soon.jpg" class="carousel-img" alt="Starting soon in Kurmannapalem">
-                    </div>
-                    <button class="carousel-btn left" onclick="moveCarousel(-1)"><i class="fas fa-chevron-left"></i></button>
-                    <button class="carousel-btn right" onclick="moveCarousel(1)"><i class="fas fa-chevron-right"></i></button>
+            <!-- Category Buttons -->
+            <button class="side-cat-pill active" id="category-Vegetarian" onclick="setMenuCategory('Vegetarian')">
+                <i class="fas fa-seedling"></i><span>Veg</span>
+            </button>
+            <button class="side-cat-pill" id="category-Vegan" onclick="setMenuCategory('Vegan')">
+                <i class="fas fa-leaf"></i><span>Vegan</span>
+            </button>
+            <button class="side-cat-pill" id="category-Nonvegetarian" onclick="setMenuCategory('Nonvegetarian')">
+                <i class="fas fa-drumstick-bite"></i><span>Non-Veg</span>
+            </button>
+            <button class="side-cat-pill" id="category-Beverage" onclick="setMenuCategory('Beverage')">
+                <i class="fas fa-tint"></i><span>Drinks</span>
+            </button>
+        </aside>
+
+        <!-- MAIN PRODUCT AREA (Scrollable Grid) -->
+        <div class="menu-main-content">
+            <div id="menu-items-area" class="menu-grid">
+                <!-- Items injected by app.js -->
+            </div>
+        </div>
+    </div>
+</section>
+<!-- DIET SCREEN -->
+<section id="diet" class="screen">
+    <!-- Dynamic Layout Wrapper -->
+    <div id="diet-dynamic-wrapper" class="diet-dynamic-wrapper state-initial">
+        
+        <!-- LEFT: Calculator Box (Styled like Home Screen) -->
+        <div class="diet-left-panel">
+            <div class="diet-hero-card">
+                <h2 style="font-size: 1.8rem; font-weight: 900; margin-bottom: 24px;">Check Your BMI</h2>
+                
+                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                    <input type="number" id="bmi-age" placeholder="Age" value="30" style="margin-bottom: 0;">
+                    <select id="bmi-gender" style="margin-bottom: 0;">
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                    </select>
+                </div>
+                <input type="number" id="bmi-height" placeholder="Height (cm)">
+                <input type="number" id="bmi-weight" placeholder="Weight (kg)">
+                
+                <!-- Uses the new solid white button you created -->
+                <button class="btn-white-rect" style="margin-top: 16px;" onclick="calculateBMI()">Calculate</button>
+
+                <!-- Score Card appears inside the box right below the button -->
+                <div id="bmi-score-container" style="display: none; margin-top: 32px; padding-top: 24px; border-top: 1px dashed var(--border-color);">
+                    <h3 id="bmi-value" style="font-size: 3.5rem; font-weight: 900; line-height: 1; color: var(--text-main);">--</h3>
+                    <p id="bmi-category" style="color: var(--brand-green); font-weight: 900; font-size: 1.2rem; text-transform: uppercase; margin-top: 8px; letter-spacing: 1px;">--</p>
+                    <p id="bmi-calories" style="color: var(--text-muted); font-size: 0.95rem; margin-top: 8px; font-weight: 600;">--</p>
+                    <!-- Invisible container to keep your existing JS logic from breaking -->
+                    <div class="bmi-score-card" style="display: none;"></div> 
                 </div>
             </div>
         </div>
-</div>
 
-<div id="menu" class="screen">
-        <div class="menu-layout">
-            <div class="menu-content">
-                <div class="category-bar">
-                    <button class="category-pill active" id="category-Vegetarian" onclick="setMenuCategory('Vegetarian')">
-                        <span class="category-icon"><i class="fas fa-seedling"></i></span>
-                        <span class="category-label">Vegetarian</span>
-                    </button>
-                    
-                    <button class="category-pill" id="category-Vegan" onclick="setMenuCategory('Vegan')">
-                        <span class="category-icon"><i class="fas fa-leaf"></i></span>
-                        <span class="category-label">Vegan</span>
-                    </button>
-                    <button class="category-pill" id="category-Non Vegetarian" onclick="setMenuCategory('Non Vegetarian')">
-                        <span class="category-icon"><i class="fas fa-drumstick-bite"></i></span>
-                        <span class="category-label">Non Vegetarian</span>
-                    </button>
-                    <button class="category-pill" id="category-Beverage" onclick="setMenuCategory('Beverage')">
-                        <span class="category-icon"><i class="fas fa-tint"></i></span>
-                        <span class="category-label">Drinks</span>
-                    </button>
-                </div>
-
-                <div class="menu-items-area" id="menu-items-area">
-                   <div class="menu-grid" id="menu-container"></div>
-                </div>
-
-            </div>
-        </div>
-</div>
-
-<div id="diet" class="screen">
-        <div class="diet-layout">
-            
-            <div class="diet-left-column">
-                <div class="form-container">
-                    <h2 style="margin: 0 0 20px 0; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); font-size: 1.5rem;">Check Your BMI</h2>
-                    
-                    <div style="display: flex; gap: 10px; margin-bottom: 5px;">
-    <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
-        <label for="bmi-age">Age</label>
-        <input type="number" id="bmi-age" value="30" required>
-    </div>
-    <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
-        <label for="bmi-gender">Gender</label>
-        <select id="bmi-gender">
-            <option value="male" selected>Male</option>
-            <option value="female">Female</option>
-        </select>
-    </div>
-</div>
-
-<div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 5px;">
-    <label for="bmi-height">Height</label>
-    <div style="display: flex; gap: 0;">
-        <input type="number" id="bmi-height" placeholder="e.g. 175" style="flex: 1; border-top-right-radius: 0; border-bottom-right-radius: 0;" required>
-        <select id="height-unit" aria-label="Height Unit" style="background: var(--bg-light); border-radius: 0 12px 12px 0; width: 80px;">
-            <option value="cm">cm</option>
-            <option value="in">in</option>
-        </select>
-    </div>
-</div>
-
-<div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 5px;">
-    <label for="bmi-weight">Weight</label>
-    <div style="display: flex; gap: 0;">
-        <input type="number" id="bmi-weight" placeholder="e.g. 70" style="flex: 1; border-top-right-radius: 0; border-bottom-right-radius: 0;" required>
-        <select id="weight-unit" aria-label="Weight Unit" style="background: var(--bg-light); border-radius: 0 12px 12px 0; width: 80px;">
-            <option value="kg">kg</option>
-            <option value="lbs">lbs</option>
-        </select>
-    </div>
-</div>
-
-                    <button class="btn-large" onclick="calculateBMI()" style="margin-top: 10px;">Calculate BMI</button>
+        <!-- RIGHT: Results & History (Hidden Initially) -->
+        <div class="diet-right-panel">
+            <div class="diet-results-card">
                 
-                                <div class="form-container" style="margin-top: 20px; max-width: 400px; background: rgba(16, 185, 129, 0.05); border: 1px dashed var(--brand-green);">
-    <h3 style="font-size: 0.95rem; margin-bottom: 8px;">Quick Macro Check</h3>
-    <p style="font-size: 0.8rem; margin-bottom: 12px; line-height: 1.4;">Ensure you're hitting your 2g/kg protein goal for today.</p>
-    <button class="btn-large" style="padding: 10px; font-size: 0.85rem; width: 100%;" onclick="showToast('Feature coming soon: Protein Logging!')">
-        Log Protein
-    </button>
-</div>
-                </div>
-            </div>
-
-            <div class="diet-right-column">
-                
-
-                <div id="bmi-score-container" style="display: none; margin-bottom: 20px;">
-                    <div class="bmi-score-card">
-                        <h3 id="bmi-value">--</h3>
-                        <p id="bmi-category">--</p>
-                        <p id="bmi-calories">--</p>
-                    </div>
-                </div>
-
-
-
-
-                <div id="bmi-recommendations-container" style="display: none;">
-                    <div style="margin-bottom: 16px;">
-    <h3 style="margin: 0;">Recommended for You</h3>
-</div>
+                <!-- Recommendations Area -->
+                <div id="bmi-recommendations-container" style="display: none; margin-bottom: 40px;">
+                    <h3 style="font-size: 1.3rem; font-weight: 900; margin-bottom: 20px; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-utensils" style="color: var(--brand-green);"></i> Recommended Bowls
+                    </h3>
                     <div class="bento-recommendations" id="bmi-meals"></div>
                 </div>
-                <div id="bmi-history-container" style="display: none; margin-top: 40px; width: 100%; max-width: 1200px; margin-left: auto; margin-right: auto;">
-    <h3 style="margin-bottom: 16px;">BMI History</h3>
-    <div id="bmi-history-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;"></div>
-</div>
+
+                <!-- History Area -->
+                <div id="bmi-history-container" style="display: none;">
+                    <h3 style="font-size: 1.3rem; font-weight: 900; margin-bottom: 20px; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-history" style="color: var(--brand-green);"></i> BMI History
+                    </h3>
+                    <div id="bmi-history-list" class="history-grid-split"></div>
+                </div>
+
             </div>
+        </div>
 
+    </div>
+</section>
+<!-- CREATE SCREEN (Redesigned - No Scroll Layout) -->
+<section id="create" class="screen">
+            <h2 style="margin: 0; font-size: 1rem; font-weight: 900;"></h2>
 
+    <div class="form-container build-bento">
 
-           
+        <!-- Header -->
+        <div class="bento-header">
+            <p class="mobile-hint" style="margin: 4px 0 16px 0; font-size: 0.85rem; color: var(--text-muted);"><i class="fas fa-arrows-alt-h"></i> Swipe cards to explore</p>
+        </div>
+
+        <!-- The 3 Dynamic Columns -->
+        <div class="builder-columns">
             
+            <div class="builder-column">
+                <div class="column-title"><span class="step-num">1</span>Select Base</div>
+                <div class="builder-grid" id="builder-bases"></div>
+            </div>
+
+            <div class="builder-column">
+                <div class="column-title"><span class="step-num">2</span>Select Protein</div>
+                <div class="builder-grid" id="builder-proteins"></div>
+            </div>
+
+            <div class="builder-column">
+                <div class="column-title"><span class="step-num">3</span>Select Fats</div>
+                <div class="builder-grid" id="builder-fats"></div>
+            </div>
+
         </div>
 
-
-        
-</div>
-
-<div id="create" class="screen">
-<div style="max-width: 600px; width: 100%; margin: 0 auto; padding-bottom: 40px; box-sizing: border-box;">            
-            <div class="form-container" style="margin-top: 10px;">                
-                <div style="margin-bottom: 24px;">
-                    <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--text-main);">1. Choose Base</h3>
-                    <div class="builder-grid" id="builder-bases">
-                        </div>
+        <!-- Integrated Action Bar -->
+        <div class="build-action-bar">
+            <div style="flex: 1;">
+                <div style="font-weight: 900; font-size: 1.6rem; color: var(--text-main); line-height: 1;">
+                    ₹<span id="builder-price">0</span>
                 </div>
-
-                <div style="margin-bottom: 24px;">
-                    <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--text-main);">2. Choose Protein</h3>
-                    <div class="builder-grid" id="builder-proteins">
-                        </div>
-                </div>
-
-                <div style="margin-bottom: 24px;">
-                    <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--text-main);">3. Healthy Fats</h3>
-                    <div class="builder-grid" id="builder-fats">
-                        </div>
+                <div style="font-size: 0.85rem; color: var(--brand-green); font-weight: 700; margin-top: 4px;" id="builder-macros">
+                    0g P | 0g F
                 </div>
             </div>
-
-            <div class="builder-summary sticky-bottom" style="margin-top: 20px; box-sizing: border-box;">
-    <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
-        
-        <div style="flex: 1; min-width: 0;">
-            <div style="font-weight: 800; font-size: 1.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                Total: ₹<span id="builder-price">0</span>
-            </div>
-            <div style="font-size: 0.85rem; color: var(--brand-green); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="builder-macros">
-                0g P | 0g F
-            </div>
+            <button class="btn-white-rect" onclick="addCustomBowlToCart()" style="flex: 1; max-width: 220px; display: flex; justify-content: center; gap: 8px;">
+    + Add
+</button>
         </div>
 
-        <button class="btn-large" onclick="addCustomBowlToCart()" style="padding: 12px 24px; flex-shrink: 0;">
-            Add to Cart
+    </div>
+</section>
+<!-- CART SCREEN -->
+<section id="cart-screen" class="screen">
+    <div style="max-width: 800px; margin: 0 auto; width: 100%; padding: 24px 16px; box-sizing: border-box; display: flex; flex-direction: column; height: 100%;">
+        
+        
+        <div id="cart-items-container" style="flex: 1; overflow-y: auto; padding-bottom: 20px;">
+            <!-- Cart items inject here -->
+        </div>
+        
+        <div id="cart-footer" style="padding-top: 20px; border-top: 1px solid var(--border-color); margin-top: auto;">
+            <button class="btn-large" style="width: 100%;" onclick="toggleCheckoutModal()">
+                Checkout (₹<span id="cart-total-price">0</span>)
+            </button>
+        </div>
+        
+    </div>
+</section>
+<!-- ORDERS SCREEN -->
+<section id="orders" class="screen">
+    <div style="max-width: 800px; margin: 0 auto; width: 100%; padding: 24px 16px; box-sizing: border-box;">
+        <h2 style="font-size: 1.8rem; font-weight: 900; margin-bottom: 24px;"></h2>
+        
+        <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--brand-green); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">Active Orders</h3>
+        <div id="active-orders-list" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px;">
+            <!-- Active orders inject here -->
+        </div>
+        
+        <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">Past Orders</h3>
+        <div id="recent-orders-list" style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Past orders inject here -->
+        </div>
+    </div>
+</section>
+
+<!-- CONTACT US / CHAT SCREEN -->
+<section id="chat-screen" class="screen">
+    <!-- Sticky Header -->
+    <div class="chat-header-modern">
+        <button class="back-btn" onclick="switchScreen('home')">
+            <i class="fas fa-arrow-left"></i>
         </button>
-
-    </div>
-</div>
-
-            
-
-
-
-        </div>
-</div>
-
-<div id="orders" class="screen">
-    <div style="max-width: 800px; margin: 0 auto; width: 100%; padding-bottom: 40px;">
-        <h2 style="margin-bottom: 20px;">Your Orders</h2>
-        
-        <h3 style="margin-bottom: 12px; font-size: 1.1rem; color: var(--brand-green);">Active Orders</h3>
-        <div id="active-orders-list" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 30px;"></div>
-        
-        <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Past Orders</h3>
-        <div id="recent-orders-list" style="display: flex; flex-direction: column; gap: 16px;"></div>
-    </div>
-</div>
-
-<div id="cart-panel" class="side-menu">
-        <div class="side-menu-header">
-            <h3>Your Order</h3>
-            <button class="close-btn" onclick="toggleCart()"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="side-menu-links" id="cart-items-container" style="overflow-y: auto; padding: 20px;">
+        <div class="chat-header-info">
+            <div class="chat-avatar">
+                <i class="fas fa-headset"></i>
             </div>
-        <div
-  style="
-    padding:20px;
-    border-top:1px solid var(--border-color);
-    background:var(--card-bg);
-    margin-top:auto;
-  "
->
-
-  <div id="cart-footer">
-
-    <div
-      style="
-        display:flex;
-        justify-content:space-between;
-        margin-bottom:16px;
-        font-weight:800;
-        font-size:1.2rem;
-      "
-    >
-      <span>Total</span>
-      <span>₹<span id="cart-total-price">0</span></span>
+            <div>
+                <h3 style="margin:0; font-size:1.1rem; font-weight:800; color: var(--text-main);">Prober Support</h3>
+                <p style="margin:0; font-size:0.75rem; color:var(--brand-green); font-weight:700;">Typically replies in minutes</p>
+            </div>
+        </div>
     </div>
 
-    <button
-      id="checkout-btn"
-      class="btn-large"
-      onclick="checkoutWhatsApp()"
-      style="
-        width:100%;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        gap:10px;
-      "
-    >
-      <i class="fab fa-whatsapp"
-         style="font-size:1.2rem;"></i>
+    <!-- Scrollable Messages Area -->
+    <div id="chat-messages" class="chat-messages-area">
+        <!-- Messages inject here -->
+    </div>
 
-      Checkout
-    </button>
+    <!-- Sticky Input Area -->
+    <div class="chat-input-container">
+        <input type="text" id="chat-input" placeholder="Type your message here..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        <button class="send-btn" onclick="sendMessage()">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </div>
+</section>
+</main>
 
-  </div>
 
+<!-- STICKY CART BAR (Appears when items are in cart) -->
+<div id="sticky-cart-bar" class="sticky-cart-bar hidden" onclick="toggleCart()">
+    <div class="sticky-cart-info">
+        <span id="sticky-cart-count" class="sticky-count-badge">1 item</span>
+        <span style="opacity: 0.5; margin: 0 10px;">|</span>
+        <span id="sticky-cart-total" style="font-weight: 800;">₹0</span>
+    </div>
+    <div class="sticky-cart-action">
+        View Cart <i class="fas fa-chevron-right" style="font-size: 0.85rem; margin-left: 6px;"></i>
+    </div>
 </div>
-</div>
+<nav class="bottom-nav">
+
+        <button class="nav-item active" onclick="switchScreen('home')" id="nav-home">
+            <i class="fa-solid fa-house"></i><span>Home</span>
+        </button>
+        <button class="nav-item" onclick="switchScreen('menu')" id="nav-menu">
+            <i class="fa-solid fa-bowl-food"></i><span>Menu</span>
+        </button>
+        <button class="nav-item" onclick="switchScreen('diet')" id="nav-diet">
+            <i class="fa-solid fa-chart-pie"></i><span>Diet</span>
+        </button>
+        <button class="nav-item" onclick="switchScreen('create')" id="nav-create">
+            <i class="fa-solid fa-wand-magic-sparkles"></i><span>Create</span>
+        </button>
+        <!-- NEW: 5th Cart Option -->
+        <button class="nav-item" onclick="switchScreen('cart-screen')" id="nav-cart-screen">
+        <div style="position: relative;">
+            <i class="fa-solid fa-shopping-cart"></i>
+            <span class="cart-badge" id="nav-cart-badge" style="display: none; top: -5px; right: -10px;">0</span>
+        </div>
+        <span id="nav-cart-text" style="transition: color 0.2s;">Cart</span>
+        </button>
+</nav>
+
+<div id="menu-overlay" class="overlay hidden"></div>
+    
+
 
 <div id="side-menu-panel" class="side-menu">
-        <div class="side-menu-header">
-            <h3>Menu</h3>
-            <button class="close-btn" onclick="toggleMenu()"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="side-menu-links">
-
-    
-<div id="login-section">
-    <button class="menu-row-btn" onclick="handleLoginClick()">
-        <i class="fas fa-user-circle fa-fw"></i>
-        <span>Login or Signup</span>
-    </button>
-</div>
-
-
-<div id="user-section" style="display: none;" class="menu-row-btn">
-    <i class="fas fa-user-circle fa-fw"></i>
-    <span id="user-display-name"></span>
-</div>
-
-    <div class="menu-row-toggle" style="display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <i class="fas fa-leaf fa-fw"></i>
-            <span style="font-weight: 500;">Veg Mode</span>
-        </div>
-        <label class="switch" style="margin: 0;">
-            <input type="checkbox" id="side-veg-toggle" onchange="handleVegToggle(this)">
-            <span class="slider round"></span>
-        </label>
+    <div class="side-menu-header">
+        <h3 style="font-weight: 800;">Settings</h3>
+        <button class="close-btn" onclick="toggleMenu()"><i class="fas fa-times"></i></button>
     </div>
     
-   <button class="menu-row-btn"
-onclick="toggleMenu(); switchScreen('chat-screen'); loadChat();">
-<i class="fas fa-comments fa-fw"></i>
-Contact Support
+    <div class="side-menu-links" style="padding: 0; display: flex; flex-direction: column; overflow-y: auto;">
+        
+        <!-- Account Section -->
+        <div style="padding: 20px 20px 10px 20px;">
+            <div id="login-section">
+                <!-- NEW: Premium Login Button -->
+                <button class="btn-login-premium" onclick="handleLoginClick()">
+                    <i class="fas fa-user-circle" style="font-size: 1.3rem;"></i> 
+                    <span>Login or Signup</span>
+                    <i class="fas fa-chevron-right" style="margin-left: auto; font-size: 0.9rem; opacity: 0.7;"></i>
+                </button>
+            </div>
+            <div id="user-section" style="display: none; align-items: center; gap: 12px; font-weight: 800; font-size: 1.1rem; color: var(--text-main); background: var(--bg-light); padding: 16px; border-radius: 16px; border: 1px solid var(--border-color);">
+                <i class="fas fa-user-circle" style="font-size: 1.5rem; color: var(--brand-green);"></i> 
+                <span id="user-display-name"></span>
+            </div>
+        </div>
+
+        <!-- MAIN SETTINGS GROUP -->
+        <div style="display: flex; flex-direction: column; padding: 0 15px; gap: 4px;">
+            
+            <!-- Veg Toggle -->
+            <div style="padding: 16px; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px; color: var(--text-main); font-weight: 700; font-size: 1.05rem;">
+                    <i class="fas fa-leaf" style="color: var(--brand-green);"></i> Pure Veg Mode
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="settings-veg-toggle" onchange="handleVegToggle(this)">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
+            <!-- Navigation Links -->
+            <button class="menu-row-btn" onclick="toggleMenu(); switchScreen('orders')">
+                <i class="fas fa-box-open" style="color: var(--brand-green);"></i>
+                <span>Your Orders</span>
+            </button>
+            
+            <button class="menu-row-btn" onclick="toggleMenu(); switchScreen('chat-screen')">
+                <i class="fas fa-headset" style="color: var(--brand-green);"></i>
+                <span>Contact Us</span>
+            </button>
+
+            <!-- NEW: Theme Selector (Inline & Visible) -->
+            <div style="padding: 16px; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 12px; color: var(--text-main); font-weight: 700; font-size: 1.05rem;">
+                    <i class="fas fa-palette" style="color: var(--brand-green);"></i>
+                    <span>Theme</span>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button class="theme-box t1" onclick="selectTheme('clean-white')"></button>
+                    <button class="theme-box t2" onclick="selectTheme('dark-grey')"></button>
+                    <button class="theme-box t3" onclick="selectTheme('white-accent')"></button>
+                    <button class="theme-box t4" onclick="selectTheme('dark-accent')"></button>
+                </div>
+            </div>
+
+        </div> 
+        <!-- END OF MAIN SETTINGS GROUP -->
+
+    
+
+        <!-- Logout Button (Redesigned as a clear action button) -->
+        <div style="padding: 20px; margin-top: auto;">
+          <button id="logout-menu-btn" onclick="handleLogout()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 20px; margin-top: auto; border: none; border-top: 1px solid rgba(239, 68, 68, 0.15); background: rgba(239, 68, 68, 0.08); color: #ef4444; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: background 0.2s; border-radius: 0 0 23px 23px;">
+    <i class="fas fa-sign-out-alt"></i> Logout
 </button>
-    <div style="margin-top: 20px; padding: 16px; border-top: 1px solid var(--border-color);">
-
-<div style="display: flex; gap: 8px; margin-top: 15px; opacity: 0.8; align-items: center;">
-    
-    <div id="secret-admin-trigger" style="padding: 4px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s; cursor: pointer; z-index: 50;">
-        <i class="fas fa-dog" title="Sasha Jr., Cooper, & Whisky" style="font-size: 1.5rem;"></i>
-            <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1px;margin-left: 10px;">Team Prober</div>
-
+        </div>
+        
     </div>
-    </div>
+</div>
 
-    <button id="logout-menu-btn" class="menu-row-btn" onclick="handleLogout()" style="color: #ef4444; margin-top: auto; border-top: 1px solid var(--border-color); border-radius: 0; padding-top: 24px; display: none;">
-        <i class="fas fa-sign-out-alt fa-fw"></i> Logout
-    </button>
-</div> </div>
-
+<div id="secret-admin-trigger" style="display:none;">
 </div>
 
 <div id="auth" class="screen">
-    <div class="auth-container">
-
+  <div class="auth-container" style="position: relative;">
     
-<div id="step-input">
-      <h2>Login or Signup</h2>
-      <p class="subtext">Enter your phone number</p>
-
-      <input id="auth-input" placeholder="Phone or Email" />
-
-<button id="send-otp-btn" onclick="handleSendOtp()">Continue</button>    
-</div>
-
+    <!-- Properly positioned close button inside the container -->
+    <button class="close-btn" onclick="switchScreen('home')" style="position: absolute !important; top: 16px !important; right: 16px !important;"><i class="fas fa-times"></i></button>
     
+    <div id="step-input">
+      <h2 style="font-size: 1.8rem; font-weight: 900; margin-bottom: 8px;">Login or Signup</h2>
+      <p class="subtext" style="margin-bottom: 24px;">Enter your phone number</p>
+
+      <!-- NEW: Prefilled +91 Wrapper -->
+      <div class="phone-input-wrapper" style="margin-bottom: 20px;">
+        <div class="country-code">+91</div>
+        <!-- Note: ID changed to auth-phone to match your CSS -->
+        <input type="tel" id="auth-phone" placeholder="Enter mobile number" maxlength="10" />
+      </div>
+
+      <button id="send-otp-btn" class="btn-large" style="width: 100%;" onclick="handleSendOtp()">Continue</button>
+    </div>
+
     <div id="step-otp" class="hidden">
-      <h2>Enter OTP</h2>
-      <p class="subtext">We sent it to <span id="user-identifier"></span></p>
+      <h2 style="font-size: 1.8rem; font-weight: 900; margin-bottom: 8px;">Enter OTP</h2>
+      
+      <!-- NEW: Edit Number Option -->
+      <p class="subtext" style="margin-bottom: 24px;">
+        Sent to <span id="user-identifier" style="font-weight: 700; color: var(--text-main);"></span>
+        <button onclick="editPhoneNumber()" style="background: none; border: none; color: var(--brand-green); font-size: 0.9rem; cursor: pointer; margin-left: 8px; text-decoration: underline; font-family: var(--app-font, 'Outfit'), sans-serif;">Edit</button>
+      </p>
 
-<div id="otp-boxes">
-  <input class="otp-digit" id="otp-1" name="otp-1" maxlength="1" />
-  <input class="otp-digit" id="otp-2" name="otp-2" maxlength="1" />
-  <input class="otp-digit" id="otp-3" name="otp-3" maxlength="1" />
-  <input class="otp-digit" id="otp-4" name="otp-4" maxlength="1" />
-  <input class="otp-digit" id="otp-5" name="otp-5" maxlength="1" />
-  <input class="otp-digit" id="otp-6" name="otp-6" maxlength="1" />
-</div>
-      <button id="auth-action-btn" onclick="handleVerifyOtp()">Verify</button>
+      <div id="otp-boxes">
+        <input class="otp-digit" type="tel" maxlength="1" />
+        <input class="otp-digit" type="tel" maxlength="1" />
+        <input class="otp-digit" type="tel" maxlength="1" />
+        <input class="otp-digit" type="tel" maxlength="1" />
+        <input class="otp-digit" type="tel" maxlength="1" />
+        <input class="otp-digit" type="tel" maxlength="1" />
+      </div>
 
-      <p class="resend" onclick="handleSendOtp()">Resend OTP</p>
+      <button id="verify-otp-btn" class="btn-large" style="width: 100%;" onclick="handleVerifyOtp()">Verify</button>
+      <p class="resend" style="margin-top: 16px; text-align: center; color: var(--text-muted);" onclick="handleSendOtp()">
+          Didn't receive? <span style="color: var(--brand-green); font-weight: 700; cursor: pointer;">Resend OTP</span>
+      </p>
     </div>
 
-    </div>
-</div>
-
-<div id="chat-screen" class="screen">
-    <div class="chat-header">
-        <div class="header-icon"><i class="fas fa-headset"></i></div>
-        <div>
-            <div style="font-weight: 800; font-size: 1rem;">Customer Support</div>
-            <div style="font-size: 0.75rem; color: var(--brand-green);">Prober Executive</div>
-        </div>
-    </div>
-
-    <div id="chat-messages">
-        </div>
-
-    <div class="chat-input-area">
-    <input type="text" id="chat-input" placeholder="Type a message...">
-    <button class="btn-large" onclick="sendMessage()">
-        Send Message <i class="fas fa-paper-plane"></i>
-    </button>
-</div>
-</div>
-
-<nav class="bottom-nav">
-    <button class="nav-item" onclick="switchScreen('home')" id="nav-home">
-        <i class="fa-solid fa-house"></i><span>Home</span>
-    </button>
-    <button class="nav-item" onclick="switchScreen('menu')" id="nav-menu">
-        <i class="fa-solid fa-bowl-food"></i><span>Menu</span>
-    </button>
-    <button class="nav-item" onclick="switchScreen('diet')" id="nav-diet">
-        <i class="fa-solid fa-chart-pie"></i><span>Diet</span>
-    </button>
-    <button class="nav-item" onclick="switchScreen('create')" id="nav-create">
-        <i class="fa-solid fa-wand-magic-sparkles"></i><span>Create</span>
-    </button>
-</nav>
-
-<div id="checkout-modal" class="overlay hidden" style="display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; box-sizing: border-box;">
-    <div class="form-container centered-modal" style="width: 100%; max-width: 400px; border-radius: 24px; margin: 0; padding: 24px; box-sizing: border-box; background: var(--card-bg); box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
-        
-        <h3 style="margin-bottom: 20px; text-align: center;">Delivery Details</h3>
-        
-        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; width: 100%;">
-            
-            <button class="btn-outline" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; box-sizing: border-box; border-color: var(--border-color); color: var(--text-main);">
-                <i class="fas fa-map-marker-alt" style="color: #ef4444;"></i> Choose Delivery Location
-            </button>
-
-            <input type="text" id="checkout-address" placeholder="Flat / House No / Landmark" style="width: 100%; box-sizing: border-box; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text-main); outline: none; font-family: 'Outfit', sans-serif;">
-
-            <textarea id="checkout-notes" placeholder="Delivery notes (optional)" style="width: 100%; box-sizing: border-box; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text-main); resize: none; font-family: 'Outfit', sans-serif; outline: none;" rows="2"></textarea>
-        </div>
-
-        <div style="display: flex; gap: 12px; width: 100%;">
-            <button class="btn-outline" onclick="toggleCheckoutModal()" style="flex: 1; border-color: var(--border-color); color: var(--text-muted); box-sizing: border-box;">Cancel</button>
-            <button class="btn-large" onclick="processCheckout()" style="flex: 2; box-sizing: border-box;">Place Order</button>
-        </div>
-    </div> 
-</div>
-
-<div id="loading-spinner" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 9999; background: var(--bg-light);">
-    <div class="spinner"></div>
+  </div>
 </div>
 
 <div id="name-modal" class="hidden">
-  <div class="form-container" style="max-width:400px; margin:40px auto;">
-    <h3>Welcome to Prober 👋</h3>
-    <p style="margin-bottom:12px;">What should we call you?</p>
-
-    <input
-      id="customer-name-input"
-      type="text"
-      placeholder="Your name"
-      style="margin-bottom:12px;"
-    >
-
-    <button class="btn-large" onclick="saveCustomerName()">
-      Continue
+  <div class="form-container checkout-modal-box" style="max-width:400px; margin:40px auto; position: relative;">
+    
+    <h3 style="font-size: 1.6rem; font-weight: 900; margin-bottom: 8px; text-align: center; color: var(--text-main);">Welcome to Prober 👋</h3>
+    <p style="text-align: center; color: var(--text-muted); font-size: 0.95rem; margin-bottom: 24px;">What should we call you?</p>
+    
+    <input id="customer-name-input" placeholder="Enter your name" style="margin-bottom: 20px;">
+    
+    <!-- Styled Continue Button -->
+    <button class="btn-large" onclick="saveCustomerName()" style="width: 100%;">Continue</button>
+    
+    <!-- New 'Add Later' Button -->
+    <button onclick="skipNameEntry()" style="background: transparent; border: none; color: var(--text-muted); width: 100%; padding: 16px; margin-top: 8px; cursor: pointer; font-family: var(--app-font, 'Outfit'), sans-serif; font-weight: 600; font-size: 0.95rem; transition: color 0.2s;">
+        I'll add it later
     </button>
+
   </div>
 </div>
+<div id="checkout-modal" class="overlay hidden">
+  <div class="checkout-modal-box">
+    <h3>Delivery Details</h3>
 
-<div id="map-picker" class="fullscreen hidden">
+    <!-- Location Button -->
+    <button type="button" class="location-picker-btn" onclick="openMapPicker()">
+    <i class="fas fa-map-marker-alt" style="color: #ef4444; font-size: 1.1rem;"></i> 
+    Choose on Map
+</button>
 
-  <div class="map-header">
-    Select Delivery Location
+    <input id="checkout-address" placeholder="Flat / House No / Landmark">
+    <textarea id="checkout-notes" placeholder="Delivery notes (optional)"></textarea>
+
+    <!-- Action Buttons -->
+    <div class="checkout-actions">
+        <button type="button" class="cancel-btn" onclick="toggleCheckoutModal()">Cancel</button>
+        <button type="button" class="confirm-btn" onclick="processCheckout()">Place Order</button>
+    </div>
   </div>
-
-  <div id="map"></div>
-
-  <div class="map-footer">
-    <p id="picked-address"></p>
-    <button onclick="confirmMapLocation()">
-      Confirm Location
-    </button>
-  </div>
-
 </div>
+<!-- Map Picker Modal -->
+<div id="map-modal" class="side-menu hidden">
+    <div class="side-menu-header">
+        <h3>Pin Location</h3>
+        <button class="close-btn" onclick="closeMapPicker()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    
+    <div id="map-container-wrapper" style="flex: 1; position: relative; overflow: hidden;">
+        <!-- The Actual Map -->
+        <div id="map-picker" style="height: 100%; width: 100%;"></div>
+        
+        <!-- FIXED CENTER POINTER (The Ghost Pin) -->
+        <div class="fixed-map-pointer">
+            <i class="fas fa-map-marker-alt"></i>
+            <div class="pin-shadow"></div>
+        </div>
 
+        <!-- NEW: Floating Locate Me Button -->
+        <button class="locate-me-btn" onclick="locateUserOnMap()">
+            <i class="fas fa-crosshairs"></i>
+        </button>
+    </div>
+
+    <!-- Proper Anchored Footer -->
+<div class="map-modal-footer">
+    <button class="btn-large map-confirm-btn" onclick="confirmMapLocation()">
+        Confirm Location
+    </button>
+</div>
+</div>
 <div id="location-gate" class="overlay hidden">
-  <div class="location-modal">
-
-    <h2>Check Delivery Availability</h2>
-    <p>We’ll verify if we deliver to your area.</p>
-
-    <button class="btn-large"
-      onclick="detectUserLocation()"
-      style="width:100%; margin-top:15px;">
-      Use Current Location
-    </button>
-
-    <button class="btn-outline"
-      onclick="closeLocationGate()"
-      style="width:100%; margin-top:10px;">
-      Cancel
-    </button>
-
-  </div>
+  <button onclick="detectUserLocation()">Use Location</button>
 </div>
 
-<div id="vault-modal" class="overlay hidden" style="display: flex; align-items: center; justify-content: center; z-index: 2000;">
-    <div class="vault-modal-box">
-        <h2 style="text-align: center;">🔐 Master Vault</h2>
-        <p style="text-align: center;">Enter access key to continue</p>
-
-        <input type="password" id="vault-key-input" placeholder="Enter key" autocomplete="off">
-
+<div id="vault-modal" class="overlay hidden" style="display: flex; align-items: center; justify-content: center; z-index: 100000;">
+    <div class="vault-modal-box" style="text-align: center;">
+        <i class="fas fa-lock" style="font-size: 2rem; color: var(--brand-green); margin-bottom: 12px;"></i>
+        <h3 style="margin-bottom: 8px;">Restricted Access</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">Enter the master key to access the admin panel.</p>
+        
+        <input type="password" id="vault-key-input" placeholder="Enter master key..." 
+               onkeypress="if(event.key === 'Enter') submitVaultKey()">
+        
         <div class="vault-actions">
-            <button class="btn-outline" onclick="closeVaultModal()">Cancel</button>
-            <button class="btn-large" onclick="submitVaultKey()">Unlock</button>
+            <button class="btn-outline" style="padding: 12px;" onclick="closeVaultModal()">Cancel</button>
+            <button class="btn-large" style="padding: 12px;" onclick="submitVaultKey()">Unlock</button>
         </div>
     </div>
 </div>
 
-<div id="theme-dropdown" class="theme-dropdown">
-
-    <button class="theme-box t1"
-            onclick="selectTheme('clean-white')"></button>
-
-    <button class="theme-box t2"
-            onclick="selectTheme('dark-grey')"></button>
-
-    <button class="theme-box t3"
-            onclick="selectTheme('white-accent')"></button>
-
-    <button class="theme-box t4"
-            onclick="selectTheme('dark-accent')"></button>
-
-</div>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.22.0/dist/pocketbase.umd.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>

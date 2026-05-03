@@ -3,39 +3,7 @@
    Keeps same UI, polished + responsive
 ===================================================== */
 
-.theme-dropdown{
-    position: fixed;
-    top: 64px;
-    right: 14px;
 
-    width: 96px;
-    padding: 10px;
-
-    display: none;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 14px;
-
-    box-shadow:
-        0 10px 25px rgba(0,0,0,.15),
-        0 4px 10px rgba(0,0,0,.08);
-
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-
-    z-index: 9999;
-
-    animation: themeFadeIn .18s ease;
-    box-sizing: border-box;
-}
-
-/* Open state */
-.theme-dropdown.open{
-    display: grid;
-}
 
 /* Theme squares */
 .theme-box{
@@ -90,32 +58,8 @@
     background: #f97316;
 }
 
-/* Small screens */
-@media (max-width: 768px){
 
-    .theme-dropdown{
-        top: 58px;
-        right: 10px;
 
-        width: 92px;
-        padding: 9px;
-        gap: 9px;
-    }
-
-    .theme-box{
-        width: 32px;
-        height: 32px;
-    }
-}
-
-/* Large screens */
-@media (min-width: 1200px){
-
-    .theme-dropdown{
-        top: 68px;
-        right: 18px;
-    }
-}
 
 /* Entry animation */
 @keyframes themeFadeIn{
@@ -129,31 +73,58 @@
     }
 }
 
-/* =====================================================
-   THEME DROPDOWN STRICT ALIGNMENT & SIZING
-===================================================== */
-.theme-dropdown {
-    position: fixed !important;
-    width: 96px !important;
-    height: auto !important;
-    padding: 10px !important;
-    display: none !important; /* Hidden by default */
-    grid-template-columns: repeat(2, 1fr) !important; /* Force 2x2 grid */
-    gap: 10px !important;
+
+/* Every "Screen" should scroll internally */
+.screen {
+    flex: 1 1 0 !important;
+    display: none; 
+    flex-direction: column;
+    overflow-y: auto !important; /* This enables internal scrolling */
+    padding: 20px;
+    box-sizing: border-box;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling for iOS */
+}
+
+.screen.active {
+    display: flex !important;
+}
+
+/* Layout for the split menu */
+.menu-layout-split {
+    display: flex !important;
+    height: 100% !important;
+    width: 100% !important;
+    overflow: hidden !important;
+}
+
+/* Fixed Sidebar Styling */
+.menu-sidebar {
+    width: 85px !important; 
     background: var(--card-bg) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 14px !important;
-    box-shadow: 0 10px 25px rgba(0,0,0,.15), 0 4px 10px rgba(0,0,0,.08) !important;
-    z-index: 99999 !important;
-    flex-direction: row !important; /* Resets conflicting app.css */
+    border-right: 1px solid var(--border-color) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 15px 5px !important;
+    flex-shrink: 0 !important;
+    overflow-y: auto !important;
 }
 
-.theme-dropdown.open {
-    display: grid !important;
+/* Sidebar Toggle Header Styling */
+.sidebar-footer-toggle {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding-bottom: 15px !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    margin-bottom: 10px !important;
 }
 
-/* Ensure squares don't get squished */
-.theme-box {
-    width: 34px !important;
-    height: 34px !important;
+/* Scrollable Main Area */
+.menu-main-content {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 16px !important;
+    -webkit-overflow-scrolling: touch !important;
 }

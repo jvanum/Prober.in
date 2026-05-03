@@ -1,8 +1,6 @@
-
 let confirmationResult = null;
 let isOtpSent = false;
 let currentCategory = 'Vegetarian';
-let cart = JSON.parse(localStorage.getItem('prober_cart')) || [];
 let adminItemsData = [];
 let currentAdminCategory = 'All';
 let currentSlide = 0;
@@ -10,14 +8,313 @@ let fetchedBuilderData = { bases: [], proteins: [], fats: [] };
 let currentBuild = { base: null, protein: null, fat: null };    
 let verifyingOtp = false;
 let pendingCartItem = null;
+const DELIVERY_RADIUS_KM = 3;
 
+// --- SECRET ADMIN EASTER EGG ---
+let logoTapCount = 0;
+let logoTapTimer = null;
+
+
+let mapInstance = null;
+let currentMapCoords = { lat: 17.699306, lng: 83.159611 }; // Default to Store[cite: 4]
+
+
+const MENU_ITEMS_PUBLIC_READ_ENABLED = true; // Pipeline OPEN
+
+let publicMenuCache = null;
+let publicMenuRequest = null;
+let hasLoggedMenuPermissionWarning = false;
 
 const STORE_LOCATION = {
-  lat: 17.699306 ,   // replace with your kitchen lat
-  lng: 83.159611 , // replace with your kitchen lng
-};
+  lat: 17.699306 ,
+  lng: 83.159611 ,     };
 
-const DELIVERY_RADIUS_KM = 3;
+
+let vaultResolve = null;
+let selectedFileForUpload = null;
+const otpInputs = document.querySelectorAll('.otp-digit');
+let currentAdminChatUserId = null;
+
+let cart = [];
+try {
+    const storedCart = localStorage.getItem('prober_cart');
+    cart = storedCart ? JSON.parse(storedCart) : [];
+} catch (error) {
+    console.warn("Corrupted cart data found. Resetting cart.", error);
+    localStorage.removeItem('prober_cart');
+    cart = [];
+}
+
+function handleLogoClick() {
+    switchScreen('home'); 
+
+    logoTapCount++;
+    // FIX: Clear the PREVIOUS timer so they don't overlap and reset prematurely
+    if (logoTapTimer) clearTimeout(logoTapTimer);
+
+    if (logoTapCount >= 7) {
+        logoTapCount = 0;
+        handleStealthAdminLogin();
+    } else {
+        // Start a fresh 1-second window from the most recent tap
+        logoTapTimer = setTimeout(() => { logoTapCount = 0; }, 1000);
+    }
+}
+
+
+function updateCartUI() {
+    localStorage.setItem('prober_cart', JSON.stringify(cart));
+
+    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    // --- 1. Dynamic 5th Nav Option (View Cart vs Cart) ---
+    // --- 1. Dynamic 5th Nav Option (Locked to "Cart") ---
+    const navText = document.getElementById('nav-cart-text');
+    const navBadge = document.getElementById('nav-cart-badge');
+    const isCartActive = document.getElementById('cart-screen')?.classList.contains('active');
+
+    if (navText) {
+        navText.innerText = "Cart"; // Locks text to stop the 4 other icons from moving
+        
+        if (count > 0 && !isCartActive) {
+            navText.style.color = "var(--brand-green)"; 
+        } else {
+            navText.style.color = "var(--text-muted)";
+        }
+    }
+
+    // THIS IS THE FIX: Forcing 'none' with !important
+    if (navBadge) {
+        if (count > 0) {
+            navBadge.innerText = count;
+            navBadge.style.setProperty('display', 'flex', 'important');
+        } else {
+            navBadge.style.setProperty('display', 'none', 'important');
+        }
+    }
+
+    // --- 2. Top Header Badge ---
+    const topBadge = document.getElementById('cart-count');
+    if (topBadge) {
+        topBadge.innerText = count;
+        topBadge.style.display = count > 0 ? 'flex' : 'none';
+    }
+
+    // --- 3. Sticky Cart Bar Logic ---
+    const stickyBar = document.getElementById('sticky-cart-bar');
+    const isMenuScreen = document.getElementById('menu')?.classList.contains('active');
+    
+    if (stickyBar) {
+        if (isMenuScreen && count > 0 && !isCartActive) {
+            stickyBar.classList.remove('hidden');
+            document.getElementById('sticky-cart-count').innerText = `${count} item${count > 1 ? 's' : ''}`;
+            document.getElementById('sticky-cart-total').innerText = `₹${subtotal}`;
+        } else {
+            stickyBar.classList.add('hidden');
+        }
+    }
+
+    // --- 4. Render Cart Contents ---
+    const container = document.getElementById('cart-items-container');
+    const footer = document.getElementById('cart-footer');
+
+    if (cart.length === 0) {
+        if (footer) footer.style.display = "none";
+        if (stickyBar) stickyBar.classList.add('hidden');
+
+        // NEW WhatsApp-style empty layout
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-state-view">
+                    <div class="empty-icon-wrapper">
+                        <i class="fas fa-shopping-basket"></i>
+                    </div>
+                    <h2>Your cart is empty</h2>
+                    <p>Looks like you haven't added any healthy meals yet.</p>
+                    <button onclick="switchScreen('menu')" class="btn-white-pill">Browse Menu</button>
+                </div>
+            `;
+        }
+    } else {
+        if (footer) footer.style.display = "block";
+        
+        const gst = Math.round(subtotal * 0.05); 
+        const deliveryFee = subtotal > 499 ? 0 : 30; 
+        const grandTotal = subtotal + gst + deliveryFee;
+
+        const totalEl = document.getElementById('cart-total-price');
+        if (totalEl) totalEl.innerText = grandTotal;
+
+        if (container) {
+            let html = cart.map((item, index) => `
+                <div class="cart-item-row">
+                    <div class="cart-item-info">
+                        <div class="cart-item-number">${index + 1}.</div>
+                        <div>
+                            <div class="cart-item-title">${item.name}</div>
+                            <div class="cart-item-calc">₹${item.price} x ${item.quantity}</div>
+                        </div>
+                    </div>
+                    <div class="cart-item-actions">
+                        <div class="cart-item-price">₹${item.price * item.quantity}</div>
+                        <div class="quantity-pill">
+                            <button onclick="updateCartQuantity('${item.id}', -1)">-</button>
+                            <span>${item.quantity}</span>
+                            <button onclick="updateCartQuantity('${item.id}', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            html += `
+                <div class="bill-details-box">
+                    <h4>Bill Details</h4>
+                    <div class="bill-details-row">
+                        <span>Item Total</span>
+                        <span>₹${subtotal}</span>
+                    </div>
+                    <div class="bill-details-row">
+                        <span style="display: flex; align-items: center;">
+                            Delivery Fee 
+                            ${deliveryFee === 0 ? '<span style="background: var(--brand-green); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; margin-left: 8px; font-weight: 800;">FREE</span>' : ''}
+                        </span>
+                        <span>${deliveryFee === 0 ? '<span style="text-decoration: line-through; color: var(--text-muted); font-size: 0.8rem; margin-right: 6px;">₹30</span>₹0' : '₹' + deliveryFee}</span>
+                    </div>
+                    <div class="bill-details-row">
+                        <span>Platform & GST (5%)</span>
+                        <span>₹${gst}</span>
+                    </div>
+                    <div class="bill-total-row">
+                        <span>To Pay</span>
+                        <span>₹${grandTotal}</span>
+                    </div>
+                </div>
+                
+                <!-- NEW: Add More Items Button -->
+                <button class="btn-outline" style="margin-top: 16px; border: 2px dashed var(--brand-green); display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="switchScreen('menu')">
+                    <i class="fas fa-plus"></i> Add More Items
+                </button>
+                <div style="height: 20px;"></div>
+            `;
+
+            container.innerHTML = html;
+        }
+    }
+    
+    syncAllMenuButtons();
+}
+
+async function loadChat() {
+    const chatContainer = document.getElementById('chat-messages');
+    if (!chatContainer) return;
+
+    if (!auth.currentUser) {
+        chatContainer.innerHTML = `
+            <div class="empty-state-view" style="height: 100%;">
+                <div class="empty-icon-wrapper" style="width: 80px; height: 80px; font-size: 2.5rem; margin-bottom: 16px;">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h2 style="font-size: 1.3rem;">Login Required</h2>
+                <p style="margin-bottom: 24px;">Please log in to chat with our support team.</p>
+                <button class="btn-white-pill" onclick="switchScreen('auth')">Log In Now</button>
+            </div>`;
+        return;
+    }
+
+    try {
+        const msgs = await pb.collection('messages').getFullList({
+            filter: `customer_id = "${window.currentCustomer.id}"`,
+            sort: 'created'
+        });
+
+        if (msgs.length === 0) {
+            chatContainer.innerHTML = `
+                <div style="text-align: center; margin-top: 60px;">
+                    <div class="chat-avatar" style="margin: 0 auto 16px auto; width: 70px; height: 70px; font-size: 2.2rem;">
+                        <i class="fas fa-hand-sparkles"></i>
+                    </div>
+                    <h3 style="color: var(--text-main); font-weight: 800; font-size: 1.4rem; margin-bottom: 8px;">Hi there, ${window.currentCustomer.name.split(' ')[0]}! 👋</h3>
+                    <p style="color: var(--text-muted); font-size: 1rem;">Need help with your order or diet plan? Send us a message.</p>
+                </div>
+            `;
+        } else {
+            chatContainer.innerHTML = msgs.map(m => `
+                <div class="message-bubble ${m.sender_role === 'admin' ? 'message-admin' : 'message-user'}">
+                    ${m.message}
+                </div>
+            `).join('');
+            
+            // Auto scroll to the very bottom to see the newest message
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    } catch (err) { 
+        console.error("Chat Error", err); 
+    }
+}
+
+async function sendMessage() {
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    if (!auth.currentUser) {
+        showToast("Please login first.", "info");
+        switchScreen('auth');
+        return;
+    }
+
+    // Clear input box immediately for good UX
+    input.value = '';
+    
+    try {
+        await pb.collection('messages').create({
+            customer_id: window.currentCustomer.id,
+            message: msg,
+            sender_role: 'customer',
+            sender_name: window.currentCustomer.name || 'Customer'
+        });
+        
+        // Refresh the chat to show the new message
+        loadChat();
+    } catch (err) { 
+        showToast("Failed to send message.", "error"); 
+    }
+}
+
+window.switchScreen = function(screenId, isBackNavigation = false) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    
+    const target = document.getElementById(screenId);
+    if (target) {
+        target.classList.add('active');
+        window.scrollTo(0, 0);
+    }
+
+    if (screenId === "menu") renderMenu();
+    if (screenId === "create") renderMealBuilder();
+    if (screenId === "orders") loadOrders(); // <--- THIS is the new line that fetches your data!
+    if (screenId === "chat-screen") loadChat();
+    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+    const activeNav = document.getElementById(`nav-${screenId}`);
+    if (activeNav) activeNav.classList.add('active');
+
+    // Handle sticky cart visibility
+    const stickyBar = document.getElementById('sticky-cart-bar');
+    if (stickyBar) {
+        if (screenId === 'menu' && cart.length > 0) {
+            stickyBar.classList.remove('hidden');
+        } else {
+            stickyBar.classList.add('hidden');
+        }
+    }
+    
+    if (typeof updateCartUI === 'function') updateCartUI();
+
+    if (!isBackNavigation) {
+        history.pushState({ screenId: screenId }, '', `#${screenId}`);
+    }
+};
 
 auth.onAuthStateChanged((user) => {
 
@@ -44,17 +341,33 @@ function handleLogoutUIOnly() {
 }
 
 
-async function handleLogout(){
- await auth.signOut();
-// DESTROY THE VIP TOKEN
- pb.authStore.clear();
- window.currentUser = null;
+async function handleLogout() {
+    try {
+        await auth.signOut();
+    } catch (firebaseErr) {
+        console.warn("Firebase sign-out warning:", firebaseErr);
+    }
 
- document.getElementById("login-section").style.display = "block";
- document.getElementById("user-section").style.display = "none";
- document.getElementById("logout-menu-btn").style.display = "none";
+    try {
+        pb.authStore.clear();
+    } catch (pbErr) {
+        console.warn("PocketBase wipe warning:", pbErr);
+    }
 
- showToast("Logged out", "success");
+    // FIX: Explicitly wipe global session variables
+    window.currentUser = null;
+    window.currentCustomer = null;
+
+    // Safe UI updates
+    const loginSec = document.getElementById("login-section");
+    const userSec = document.getElementById("user-section");
+    const logoutBtn = document.getElementById("logout-menu-btn");
+
+    if (loginSec) loginSec.style.display = "block";
+    if (userSec) userSec.style.display = "none";
+    if (logoutBtn) logoutBtn.style.display = "none";
+
+    showToast("Logged out", "success");
 }
 
 function updateAuthUI(user) {
@@ -65,17 +378,11 @@ function updateAuthUI(user) {
   }
 }
 
-
-
-
-
 const dataService = {
     getMenu: async () => {
         return fetchPublicMenuItems();
     }
 };
-
-
 
 pb.collection('messages').subscribe('*', function (e) {
     const currentUser = window.currentCustomer;
@@ -88,21 +395,13 @@ pb.collection('messages').subscribe('*', function (e) {
 }).catch((err) => {
     if (!isAdminOnlyError(err)) console.warn("Message realtime subscription unavailable:", err);
 });
-
 /* =====================================================
    MENU DATA FETCHING (Strictly Database)
 ===================================================== */
-const MENU_ITEMS_PUBLIC_READ_ENABLED = true; // Pipeline OPEN
-
-let publicMenuCache = null;
-let publicMenuRequest = null;
-let hasLoggedMenuPermissionWarning = false;
-
 // KEEP THIS: Used by the Live Chat system to ignore admin errors silently
 function isAdminOnlyError(error) {
     return error?.status === 403 && /only admins/i.test(error?.message || error?.response?.message || '');
 }
-
 // KEEP THIS: Formats your macros perfectly
 function normalizeMenuItem(item) {
     return {
@@ -113,9 +412,6 @@ function normalizeMenuItem(item) {
         macros: item.macros || `${Number(item.protein || 0)}g P | ${Number(item.fat || 0)}g F`
     };
 }
-
-
-
 // THE FIX: Stripped out the fake menu loader. It only asks the database now.
 async function fetchPublicMenuItems() {
     if (publicMenuCache) return publicMenuCache;
@@ -139,68 +435,28 @@ async function fetchPublicMenuItems() {
 
 
 window.addEventListener('offline', () => {
-    const banner = document.getElementById('offline-banner');
-    if (banner) {
-        banner.style.display = 'block';
-        showToast("Connection lost. Some features may not work.", "error");
-    }
+    setTimeout(() => {
+        if (!navigator.onLine) {
+            showToast("Connection lost", "error");
+        }
+    }, 1500);
 });
 
 window.addEventListener('online', () => {
-    const banner = document.getElementById('offline-banner');
-    if (banner) {
-        banner.style.display = 'none';
-        showToast("Back online!", "success");
+    if (navigator.onLine) {
+        showToast("You're online", "success");
     }
 });
-
-
-function switchScreen(screenId, isBackNavigation = false) {
-    // 1. Hide all screens
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    
-    // 2. Show target screen
-    const target = document.getElementById(screenId);
-    if (target) {
-        target.classList.add('active');
-        window.scrollTo(0, 0);
-    }
-
-
-if (screenId === "menu") {
-  renderMenu();
-}
-
-    // 3. Update Bottom Nav UI
-    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-    const activeNav = document.getElementById(`nav-${screenId}`);
-    if (activeNav) activeNav.classList.add('active');
-
-    // 4. Update Browser History
-    if (!isBackNavigation) {
-        history.pushState({ screenId: screenId }, '', `#${screenId}`);
-    }
-}
-
-// 5. Handle the physical Back Button click
-window.onpopstate = function(event) {
-    if (event.state && event.state.screenId) {
-        // Switch to the previous screen without pushing a new history entry
-        switchScreen(event.state.screenId, true);
-    } else {
-        // If there's no state (like the very first load), default to Home
-        switchScreen('home', true);
-    }
-};
 
 // 6. Initialize on page load
 window.onload = () => {
     const hash = window.location.hash.replace('#', '');
     const initialScreen = hash || 'home';
     switchScreen(initialScreen);
+      applyVegToggleState();
 };
-function openAdminPanel() {
 
+function openAdminPanel() {
     const user = auth.currentUser;
 
     if (!user || !isAdmin()) {
@@ -211,8 +467,6 @@ function openAdminPanel() {
     window.location.href = "admin.html";
 }
 
-
-let vaultResolve = null;
 
 function askVaultKey() {
     document.getElementById("vault-modal").classList.remove("hidden");
@@ -261,8 +515,6 @@ function showToast(message, type = "info") {
 
   }, 2200);
 }
-
-
 
 function hasVerifiedLocation() {
   return localStorage.getItem("prober_location_verified") === "true";
@@ -380,215 +632,57 @@ function detectUserLocation() {
   );
 }
 
-
-function toggleMenu() {
-    const menu = document.getElementById('side-menu-panel');
-    const overlay = document.getElementById('menu-overlay');
-    document.getElementById('cart-panel').classList.remove('open');
-    menu.classList.toggle('open');
-    overlay.classList.toggle('hidden', !menu.classList.contains('open'));
-}
-
-function toggleCart() {
-    const cart = document.getElementById('cart-panel');
-    const overlay = document.getElementById('menu-overlay');
-    document.getElementById('side-menu-panel').classList.remove('open');
-    cart.classList.toggle('open');
-    overlay.classList.toggle('hidden', !cart.classList.contains('open'));
-}
-
-function handleVegToggle(checkbox) {
-    const nonVegBtn = document.getElementById('category-Non Vegetarian');
-    const sideToggle = document.getElementById('side-veg-toggle');
-    const headerToggle = document.getElementById('header-veg-toggle');
-    
-    if (sideToggle) sideToggle.checked = checkbox.checked;
-    if (headerToggle) headerToggle.checked = checkbox.checked;
-
-    if (checkbox.checked) {
-        if (nonVegBtn) nonVegBtn.style.display = 'none';
-        if (currentCategory === 'Non Vegetarian') setMenuCategory('Vegetarian');
-    } else {
-        if (nonVegBtn) nonVegBtn.style.display = 'inline-flex';
-    }
-}
-
-
-function moveCarousel(direction) {
-    const track = document.getElementById('carousel-track');
-    if (!track) return;
-    const slides = track.querySelectorAll('.carousel-img');
-    currentSlide += direction;
-    if (currentSlide < 0) currentSlide = slides.length - 1;
-    if (currentSlide >= slides.length) currentSlide = 0;
-    track.style.transform = `translateX(-${currentSlide * 100}%)`;
-}
-
 function goToCreate() {
-    document.getElementById('bmi-height').value = '';
-    document.getElementById('bmi-weight').value = '';
-    document.getElementById('bmi-score-container').style.display = 'none';
-    document.getElementById('bmi-recommendations-container').style.display = 'none';
-    document.getElementById('bmi-history-container').style.display = 'block';
+    // FIX: Safe DOM updates
+    const heightInput = document.getElementById('bmi-height');
+    const weightInput = document.getElementById('bmi-weight');
+    if (heightInput) heightInput.value = '';
+    if (weightInput) weightInput.value = '';
+    
+    const scoreBox = document.getElementById('bmi-score-container');
+    const recBox = document.getElementById('bmi-recommendations-container');
+    const historyBox = document.getElementById('bmi-history-container');
+    
+    if (scoreBox) scoreBox.style.display = 'none';
+    if (recBox) recBox.style.display = 'none';
+    if (historyBox) historyBox.style.display = 'block';
+    
     switchScreen('create');
 }
 
-
-document.addEventListener('mousedown', (e) => {
-
-    const sideMenu =
-      document.getElementById('side-menu-panel');
-
-    const cartPanel =
-      document.getElementById('cart-panel');
-
-    const themeDropdown =
-      document.getElementById('theme-dropdown');
-
-    const themeBtn =
-      document.querySelector('.theme-open-btn');
-
-    const overlay =
-      document.getElementById('menu-overlay');
-
-    if (
-        sideMenu &&
-        cartPanel &&
-        !sideMenu.contains(e.target) &&
-        !cartPanel.contains(e.target) &&
-        !e.target.closest('.nav-btn')
-    ) {
-        sideMenu.classList.remove('open');
-        cartPanel.classList.remove('open');
-
-        if (overlay)
-          overlay.classList.add('hidden');
-    }
-
-    if (
-        themeDropdown &&
-        !themeDropdown.contains(e.target) &&
-        (!themeBtn ||
-         !themeBtn.contains(e.target))
-    ) {
-        themeDropdown.classList.add('hidden');
-    }
-
-});
-
-/* =====================================================
-   PRODUCTION-READY CART & BILLING
-===================================================== */
-function updateCartUI() {
-    localStorage.setItem('prober_cart', JSON.stringify(cart));
-
-    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    
-    const badge = document.getElementById('cart-count');
-    if (badge) {
-        badge.innerText = count;
-        badge.style.display = count > 0 ? 'flex' : 'none';
-    }
-
-    const container = document.getElementById('cart-items-container');
-    const footer = document.getElementById('cart-footer');
-
-    if (cart.length === 0) {
-        if (footer) footer.style.display = "none";
-        container.innerHTML = `
-            <div style="text-align:center; color:var(--text-muted); margin-top:60px; padding:20px; animation: popIn 0.4s ease;">
-                <div style="background: var(--bg-light); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-                    <i class="fas fa-shopping-bag" style="font-size:2.5rem; color: var(--border-color);"></i>
-                </div>
-                <h3 style="color: var(--text-main); margin-bottom: 8px;">Your cart is empty</h3>
-                <p style="margin-bottom:24px; font-size: 0.9rem;">Looks like you haven't added any healthy meals yet.</p>
-                <button onclick="toggleCart(); switchScreen('menu')" class="btn-large" style="width:100%; max-width:220px; margin:auto; border-radius: 99px;">
-                    Browse Menu
-                </button>
-            </div>
-        `;
-    } else {
-        if (footer) footer.style.display = "block";
-        
-        // 1. Calculate Taxes and Fees dynamically
-        const gst = Math.round(subtotal * 0.05); // 5% GST
-        const deliveryFee = subtotal > 499 ? 0 : 30; // Free delivery over ₹499
-        const grandTotal = subtotal + gst + deliveryFee;
-
-        // Update the footer button total
-        const totalEl = document.getElementById('cart-total-price');
-        if (totalEl) totalEl.innerText = grandTotal;
-
-        // 2. Render Items with Serial Numbers & Subtotals
-        let html = cart.map((item, index) => `
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px dashed var(--border-color);">
-                <div style="display: flex; gap: 12px; flex: 1;">
-                    <div style="font-weight: 800; color: var(--text-muted); font-size: 0.9rem; margin-top: 2px;">${index + 1}.</div>
-                    <div>
-                        <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main); margin-bottom: 4px; line-height: 1.2;">${item.name}</div>
-                        <div style="font-size: 0.85rem; color: var(--text-muted);">₹${item.price} <span style="font-size: 0.75rem; margin: 0 4px;">x</span> ${item.quantity}</div>
-                    </div>
-                </div>
-                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 12px;">
-                    <div style="font-size: 0.95rem; color: var(--text-main); font-weight: 800;">₹${item.price * item.quantity}</div>
-                    <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 6px;">
-                        <button style="background:none; border:none; padding:0; cursor:pointer; color:var(--brand-green); font-weight: bold; font-size: 1.1rem; width: 24px; display: flex; align-items: center; justify-content: center;" onclick="updateCartQuantity('${item.id}', -1)">-</button>
-                        <span style="font-weight: 700; font-size: 0.85rem; width: 14px; text-align: center; color: var(--text-main);">${item.quantity}</span>
-                        <button style="background:none; border:none; padding:0; cursor:pointer; color:var(--brand-green); font-weight: bold; font-size: 1.1rem; width: 24px; display: flex; align-items: center; justify-content: center;" onclick="updateCartQuantity('${item.id}', 1)">+</button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-
-        // 3. Render Production-Level Bill Summary
-        html += `
-            <div style="background: var(--bg-light); border-radius: 16px; padding: 16px; margin-top: 8px; border: 1px solid var(--border-color);">
-                <h4 style="margin: 0 0 16px 0; font-size: 0.85rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Bill Details</h4>
-                
-                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: var(--text-main);">
-                    <span>Item Total</span>
-                    <span style="font-weight: 600;">₹${subtotal}</span>
-                </div>
-                
-                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: var(--text-main);">
-                    <span style="display: flex; align-items: center;">
-                        Delivery Fee 
-                        ${deliveryFee === 0 ? '<span style="background: var(--brand-green); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; margin-left: 8px; font-weight: 800;">FREE</span>' : ''}
-                    </span>
-                    <span style="font-weight: 600;">${deliveryFee === 0 ? '<span style="text-decoration: line-through; color: var(--text-muted); font-size: 0.8rem; margin-right: 6px;">₹30</span>₹0' : '₹' + deliveryFee}</span>
-                </div>
-                
-                <div style="display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 0.9rem; color: var(--text-main);">
-                    <span>Platform & GST (5%)</span>
-                    <span style="font-weight: 600;">₹${gst}</span>
-                </div>
-                
-                <div style="display: flex; justify-content: space-between; padding-top: 16px; border-top: 1px dashed var(--border-color); font-size: 1.1rem; font-weight: 800; color: var(--text-main);">
-                    <span>To Pay</span>
-                    <span>₹${grandTotal}</span>
-                </div>
-            </div>
-            
-            <div style="background: rgba(16, 185, 129, 0.08); border-radius: 12px; padding: 30px; margin-top: 16px; margin-bottom: 30px; display: flex; gap: 12px; align-items: center; border: 1px dashed rgba(16, 185, 129, 0.3);">
-                <i class="fas fa-shield-alt" style="color: var(--brand-green); font-size: 1.5rem;"></i>
-                <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
-                    <strong style="color: var(--brand-green);">100% Safe & Hygienic</strong><br>
-                    Meals prepared in a sanitized cloud kitchen.
-                </div>
-            </div>
-            <div style="height: 20px;"></div>
-        `;
-
-        container.innerHTML = html;
-    }
-    
-    syncAllMenuButtons();
+function toggleCart() {
+    switchScreen('cart-screen');
 }
 
 /* =====================================================
    UPDATED CHECKOUT LOGIC (Includes Taxes/Fees)
 ===================================================== */
+
+// NEW: Dedicated Order Success Screen
+function showOrderConfirmation(orderId) {
+    const modal = document.createElement('div');
+    modal.className = 'overlay centered-modal';
+    modal.style.zIndex = '100000';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    
+    // Using your app's native card styling
+    modal.innerHTML = `
+        <div class="checkout-modal-box" style="text-align: center; padding: 40px 24px; animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;">
+            <div style="width: 80px; height: 80px; background: rgba(16, 185, 129, 0.1); color: var(--brand-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 20px;">
+                <i class="fas fa-check"></i>
+            </div>
+            <h2 style="margin-bottom: 12px; font-size: 1.8rem; font-weight: 900; color: var(--text-main);">Order Placed!</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 24px;">Your order <strong>#${orderId.slice(0,5)}</strong> has been received and sent to the kitchen.</p>
+<button class="order-track-btn" onclick="this.closest('.overlay').remove(); switchScreen('orders');">
+    Track Order
+</button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
 async function processCheckout() {
     const addressInput = document.getElementById('checkout-address')?.value.trim() || '';
     const notesInput = document.getElementById('checkout-notes')?.value.trim() || '';
@@ -601,28 +695,33 @@ async function processCheckout() {
     }
 
     if (!addressInput) {
-        showToast("Please enter a delivery location/address.", "error");
-        document.getElementById('checkout-address').focus(); 
+        const addressField = document.getElementById('checkout-address');
+        addressField.classList.add("input-error");
+        addressField.placeholder = "Please enter a delivery location/address";
+        addressField.value = "";
+        addressField.focus();
         return; 
     }
 
-    const orderBtn = document.querySelector('#checkout-modal .btn-large');
+    const orderBtn = document.querySelector('#checkout-modal .confirm-btn');
     if (orderBtn) {
         orderBtn.disabled = true;
         orderBtn.innerText = "Processing...";
     }
 
-    // Recalculate exact totals for the database & WhatsApp
     const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const gst = Math.round(subtotal * 0.05);
     const deliveryFee = subtotal > 499 ? 0 : 30;
     const grandTotal = subtotal + gst + deliveryFee;
 
     try {
+        // 1. Send Order to PocketBase (Added address & notes)
         const order = await pb.collection('orders').create({
             customer_id: window.currentCustomer.id,
-            total_price: grandTotal, // Save the final amount to DB
+            total_price: grandTotal,
             status: 'Pending',
+            address: addressInput, 
+            notes: notesInput      
         });
 
         for (const item of cart) {
@@ -634,32 +733,16 @@ async function processCheckout() {
             });
         }
 
-        // Send the detailed bill to WhatsApp
-        let message = `*New Order: Prober* \n\n`;
-        message += `📍 *Location:* ${addressInput}\n`;
-        if (notesInput) message += `📝 *Notes:* ${notesInput}\n`;
-        
-        message += `\n*Items:*\n`;
-        cart.forEach((item, index) => { 
-            message += `${index + 1}. ${item.name} (x${item.quantity}) - ₹${item.price * item.quantity}\n`; 
-        });
-        
-        message += `\n*Bill Summary:*\n`;
-        message += `Item Total: ₹${subtotal}\n`;
-        message += `GST (5%): ₹${gst}\n`;
-        message += `Delivery: ₹${deliveryFee}\n`;
-        message += `*Grand Total: ₹${grandTotal}*`;
-
-        window.open(`https://wa.me/918142581325?text=${encodeURIComponent(message)}`, '_blank');
-
+        // 2. Clean up UI
         cart = [];
         updateCartUI();
-        toggleCheckoutModal();
+        toggleCheckoutModal(); // Hide the address modal
         
         document.getElementById('checkout-address').value = '';
         document.getElementById('checkout-notes').value = '';
         
-        switchScreen('orders');
+        // 3. Show Success Confirmation Modal
+        showOrderConfirmation(order.id);
 
     } catch (error) {
         console.error("Order failed:", error);
@@ -671,6 +754,9 @@ async function processCheckout() {
         }
     }
 }
+
+
+
 function addToCart(id, name, price) {
     const existingItem = cart.find(item => item.id === id);
     if (existingItem) {
@@ -686,7 +772,6 @@ function addToCart(id, name, price) {
     setTimeout(() => cartBtn.style.transform = 'scale(1)', 200);
 }
 
-
 function updateCartQuantity(id, change) {
     const itemIndex = cart.findIndex(item => item.id === id);
     if (itemIndex > -1) {
@@ -698,23 +783,21 @@ function updateCartQuantity(id, change) {
     }
 }
 
-
-
 function getMenuButtonHTML(id, name, price) {
     const cartItem = cart.find(c => c.id === id);
     if (!cartItem) {
-        
-        return `<button class="btn-outline" style="padding: 0; font-size: 0.85rem; border-color: white; color: white; width: 90px; height: 32px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; background: rgba(0,0,0,0.3); border-radius: 8px;" 
+        // Dashed border, orange text, jump animation applied!
+        return `<button class="btn-add-dashed jump-btn" 
             onclick="guardedAddToCart('${id}', '${name}', ${price})">
             + Add
         </button>`;
     } else {
-        
+        // Solid Orange Pill
         return `
-        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--brand-green); border-radius: 8px; width: 90px; height: 32px; overflow: hidden; box-shadow: 0 4px 12px rgba(16,185,129,0.4);">
-            <button style="background: transparent; border: none; color: white; width: 32px; height: 100%; cursor: pointer; font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; padding-bottom: 2px;" onclick="updateCartQuantity('${id}', -1)">-</button>
-            <span style="color: white; font-weight: 800; font-size: 0.95rem;">${cartItem.quantity}</span>
-            <button style="background: transparent; border: none; color: white; width: 32px; height: 100%; cursor: pointer; font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; padding-bottom: 2px;" onclick="updateCartQuantity('${id}', 1)">+</button>
+        <div class="btn-quantity-solid">
+            <button onclick="updateCartQuantity('${id}', -1)">-</button>
+            <span>${cartItem.quantity}</span>
+            <button onclick="updateCartQuantity('${id}', 1)">+</button>
         </div>`;
     }
 }
@@ -736,6 +819,7 @@ function checkoutWhatsApp() {
         showToast("Add some meals to your cart first!", "info");
         return;
     }
+    toggleCart();
     toggleCheckoutModal(); 
 }
 
@@ -748,13 +832,10 @@ function syncAllMenuButtons() {
     });
 }
 
-
 async function renderMenu() {
     const container = document.getElementById('menu-items-area'); 
-     document.getElementById("menu-container");
 
     if (!container) return;
-    
     
     container.innerHTML = `
         <div style="padding: 40px 20px; text-align: center; color: var(--text-muted); width: 100%;">
@@ -764,19 +845,42 @@ async function renderMenu() {
     `;
 
     try {
-        
         const menuItems = await dataService.getMenu();
-        const filteredItems = menuItems.filter(item => item.category === currentCategory);
-        
-        
+
+        const vegOnly = localStorage.getItem('prober_veg_only') === 'true';
+
+        let filteredItems = menuItems.filter(item => {
+            // normalize once (this kills ALL hidden bugs)
+            const category = (item.category || '').trim();
+
+            // 🚫 remove non-veg if toggle ON
+            if (vegOnly && category === 'Nonvegetarian') {
+                return false;
+            }
+
+            // 🎯 match current category
+            return category === currentCategory;
+        });
+
         if (filteredItems.length === 0) {
-            container.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: var(--text-muted); width: 100%;">Sold out for today!</div>';
+            container.innerHTML = `
+                <div style="padding: 40px 20px; text-align: center; color: var(--text-muted); width: 100%;">
+                    Sold out for today!
+                </div>`;
             return;
         }
 
-        
         container.innerHTML = filteredItems.map(item => {
-            const bgStyle = item.img ? `background-image: url('${item.img}');` : `background: linear-gradient(135deg, var(--border-color), var(--card-bg));`;
+            // FIX: Properly construct the PocketBase API URL for the image
+            let imageUrl = '';
+            if (item.img && item.img !== "") {
+                imageUrl = pb.files.getUrl(item, item.img);
+            }
+            
+            const bgStyle = imageUrl 
+                ? `background-image: url('${imageUrl}');` 
+                : `background: linear-gradient(135deg, var(--border-color), var(--card-bg));`;
+
             const price = item.price || 150; 
             
             return `
@@ -799,9 +903,12 @@ async function renderMenu() {
                 </div>
             `;
         }).join('');
+
     } catch (err) {
-        
-        container.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: #ef4444;">Error loading menu. Please try again later.</div>';
+        container.innerHTML = `
+            <div style="padding: 40px 20px; text-align: center; color: #ef4444;">
+                Error loading menu. Please try again later.
+            </div>`;
         console.error("Render Error:", err);
     }
 }
@@ -814,10 +921,24 @@ function getImagePath(item) {
     return `/images/${fileName}`; 
 }
 
-
-function setMenuCategory(c){currentCategory=c;document.querySelectorAll('.category-pill').forEach(b=>b.classList.toggle('active',b.id===`category-${c}`));renderMenu()}
-function handleSwipeCategory(d){const c=['Vegetarian','Vegan','Non Vegetarian','Beverage'];const isVeg=document.getElementById('header-veg-toggle')?.checked;const a=isVeg?c.filter(x=>x!=='Non Vegetarian'):c;let i=a.indexOf(currentCategory);i=(d==='left')?(i+1)%a.length:(i-1+a.length)%a.length;setMenuCategory(a[i])}
-
+function setMenuCategory(category) {
+    currentCategory = category;
+    
+    // 1. Target all sidebar buttons using the correct class
+    const buttons = document.querySelectorAll('.side-cat-pill');
+    
+    buttons.forEach(btn => {
+        // 2. Remove active class from everyone
+        btn.classList.remove('active');
+        
+        // 3. Add active class ONLY to the matching ID
+        if (btn.id === `category-${category}`) {
+            btn.classList.add('active');
+        }
+    });
+    
+    renderMenu();
+}
 /* =====================================================
    MEAL BUILDER FETCHING (Strictly Database)
 ===================================================== */
@@ -865,17 +986,24 @@ function updateBuilderSummary() {
 }
 
 function renderMealBuilder() {
-    
-    const isVegMode = document.getElementById('header-veg-toggle')?.checked;
+    const vegToggle = document.getElementById('sidebar-veg-toggle');
+    const isVegMode = vegToggle ? vegToggle.checked : false;
 
     ['bases', 'proteins', 'fats'].forEach(catKey => {
         const container = document.getElementById(`builder-${catKey}`);
         if (!container) return;
 
-        
         let items = fetchedBuilderData[catKey];
+        
         if (isVegMode) {
-            items = items.filter(item => item.category_type !== 'Non Vegetarian');
+            items = items.filter(item => {
+                if (item.category === 'Nonvegetarian') return false;
+                
+                // Filter out non-veg proteins by checking the item name
+                const name = (item.name || '').toLowerCase();
+                const meatWords = ['chicken', 'egg', 'fish', 'beef', 'mutton', 'prawn', 'meat'];
+                return !meatWords.some(word => name.includes(word));
+            });
         }
         
         container.innerHTML = items.map(item => `
@@ -897,10 +1025,15 @@ function addCustomBowlToCart() {
         return;
     }
     
-    
     const baseItem = fetchedBuilderData.bases.find(i => i.id === currentBuild.base);
     const proteinItem = fetchedBuilderData.proteins.find(i => i.id === currentBuild.protein);
     const fatItem = currentBuild.fat ? fetchedBuilderData.fats.find(i => i.id === currentBuild.fat) : null;
+    
+    // FIX: Ensure the items were successfully found in the database arrays
+    if (!baseItem || !proteinItem) {
+        showToast("Menu error. Please refresh the page.", "error");
+        return;
+    }
     
     let price = baseItem.price + proteinItem.price + (fatItem ? fatItem.price : 0);
     const bowlName = `Custom: ${proteinItem.name} Bowl`;
@@ -909,19 +1042,16 @@ function addCustomBowlToCart() {
     addToCart(bowlId, bowlName, price);
     showToast("Custom bowl added to cart!", "success");
     
-    
     currentBuild = { base: null, protein: null, fat: null };
     renderMealBuilder();
     updateBuilderSummary(); 
 }
-
-
 async function getBMIRecommendations(goal) {
   let items = await dataService.getMenu();
 
   // only visible meal categories
   items = items.filter(item =>
-    ["Vegetarian", "Vegan", "Non Vegetarian", "Beverage"]
+    ["Vegetarian", "Vegan", "Nonvegetarian", "Beverage"]
       .includes(item.category)
   );
 
@@ -1067,7 +1197,7 @@ async function calculateBMI() {
         font-weight:800;
         color:var(--brand-green);
       ">
-        Build Your Bowl
+        Create Your Bowl
       </div>
     </div>
   `;
@@ -1094,13 +1224,23 @@ async function calculateBMI() {
     recContainer.style.display = "block";
   }
 
-  // Save history
-  saveBmiHistory(
-    bmi,
-    category,
-    heightCm.toFixed(1),
-    weightKg.toFixed(1)
-  );
+  // ==========================================
+    // NEW: TRIGGER THE DYNAMIC SPLIT ANIMATION
+    // ==========================================
+    const dynamicWrapper = document.getElementById('diet-dynamic-wrapper');
+    if (dynamicWrapper) {
+        dynamicWrapper.classList.remove('state-initial');
+        dynamicWrapper.classList.add('state-calculated');
+    }
+
+    // Save history
+    saveBmiHistory(
+        bmi,
+        category,
+        heightCm.toFixed(1),
+        weightKg.toFixed(1)
+    );
+
 
   // Protein Goal
   const proteinGoalMin =
@@ -1136,20 +1276,6 @@ async function calculateBMI() {
       proteinDisplay
     );
   }
-}
-
-async function saveBmiHistory(bmi, category, height, weight) {
-    if (!auth.currentUser) {
-        showToast("Log in to save history!", "info");
-        return;
-    }
-    try {
-        await pb.collection('bmi_history').create({
-            customer_id: window.currentCustomer.id,
-            height, weight, bmi, category
-        });
-        renderBmiHistory();
-    } catch (err) { showToast("Failed to save BMI.", "error"); }
 }
 
 async function renderBmiHistory() {
@@ -1192,18 +1318,33 @@ async function renderBmiHistory() {
             if (record.category.includes('Overweight')) catColor = '#f97316'; 
             if (record.category.includes('Underweight')) catColor = '#3b82f6'; 
 
+            // NEW: Split Flexbox Layout
             return `
-            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 16px 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <div style="font-weight: 700; font-size: 1rem; color: var(--text-main);">${date}</div>
-                    <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">${record.weight}kg • ${record.height}cm</div>
-                </div>
-                <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
-                    <div style="font-size: 1.6rem; font-weight: 800; color: var(--text-main); line-height: 1;">${record.bmi}</div>
-                    <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: ${catColor};">${record.category.split(' ')[0]}</div>
-                </div>
-            </div>
-            `;
+<div style="box-sizing: border-box; width: 100%; display: flex; background: var(--card-bg); border-radius: 14px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); overflow: hidden; transition: transform 0.2s ease;">
+    
+    <!-- Info Section (Left Side - 90%) -->
+    <div style="flex: 1; padding: 16px; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">${date}</div>
+            <div style="font-size: 1.4rem; font-weight: 900; color: var(--text-main); line-height: 1;">${record.bmi}</div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">${record.weight}kg • ${record.height}cm</div>
+            <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: ${catColor};">${record.category.split(' ')[0]}</div>
+        </div>
+    </div>
+
+    <!-- Delete Button Section (Right Side - 10%) -->
+    <button onclick="deleteBmiRecord('${record.id}')" 
+            style="width: 55px; flex-shrink: 0; background: transparent; border: none; border-left: 1px dashed var(--border-color); color: #ef4444; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: background 0.2s, filter 0.2s;"
+            onmouseover="this.style.background='rgba(239, 68, 68, 0.08)'" 
+            onmouseout="this.style.background='transparent'">
+        <i class="fas fa-trash-alt"></i>
+    </button>
+
+</div>
+`;
         }).join('');
         
         container.style.display = 'block';
@@ -1214,43 +1355,22 @@ async function renderBmiHistory() {
     }
 }
 
-
-async function loadChat() {
-    if (!auth.currentUser) return;
+async function saveBmiHistory(bmi, category, height, weight) {
+    if (!auth.currentUser) {
+        showToast("Log in to save history!", "info");
+        return;
+    }
     try {
-        const msgs = await pb.collection('messages').getFullList({
-            filter: `customer_id = "${window.currentCustomer.id}"`,
-            sort: 'created'
-        });
-        document.getElementById('chat-messages').innerHTML = msgs.map(m => `
-            <div class="message-bubble ${m.sender_role === 'admin' ? 'message-admin' : 'message-user'}">
-                ${m.message}
-            </div>
-        `).join('');
-    } catch (err) { console.error("Chat Error", err); }
-}
-
-async function sendMessage() {
-    const input = document.getElementById('chat-input');
-    const msg = input.value.trim();
-    if (!msg || !auth.currentUser) return;
-
-    try {
-        await pb.collection('messages').create({
+        await pb.collection('bmi_history').create({
             customer_id: window.currentCustomer.id,
-            message: msg,
-            sender_role: 'customer',
-            sender_name: window.currentCustomer.name || 'Customer'
+            height, weight, bmi, category
         });
-        input.value = '';
-        loadChat();
-    } catch (err) { showToast("Failed to send.", "error"); }
+        renderBmiHistory();
+    } catch (err) { showToast("Failed to save BMI.", "error"); }
 }
 
 
 function triggerNotification(){if(navigator.vibrate)navigator.vibrate(200);new Audio('/assets/notification.mp3').play().catch(()=>{})}
-
-
 
 function showAdminTab(tabId) {
     // 1. Hide all tab content sections
@@ -1282,7 +1402,6 @@ function showAdminTab(tabId) {
         loadAdminChat();
     }
 }
-let selectedFileForUpload = null;
 
 async function renderAdminMenu() {
     if (!isAdmin()) return; // Protection added
@@ -1313,7 +1432,6 @@ async function updateItemAvailability(itemId, isAvailable) {
     }
 }
 
-
 async function handleAddItem(event) {
     event.preventDefault();
     if (!isAdmin()) {
@@ -1338,23 +1456,6 @@ async function handleAddItem(event) {
     } catch (err) { showToast("Error adding dish.", "error"); }
 }
 
-
-
-async function loadAdminChat() {
-    if (!isAdmin()) return; // Protection added
-    
-    const listContainer = document.getElementById('admin-chat-users-list');
-    const windowContainer = document.getElementById('admin-chat-window');
-    // ... [rest of your existing loadAdminChat code remains exactly the same]
-}
-
-async function openAdminChat(userId, userName) {
-    if (!isAdmin()) return; // Protection added
-    // ... [rest of your existing openAdminChat code remains exactly the same]
-}
-
-
-
 async function deleteMenuItem(id, name) {
     if (!isAdmin()) {
         showToast("Access Denied: Please login with admin credentials.", "error");
@@ -1375,12 +1476,6 @@ async function deleteMenuItem(id, name) {
     }
 }
 
-async function sendAdminReply() {
-    if (!isAdmin()) return; // Protection added
-    if (!currentAdminChatUserId) return;
-    // ... [rest of your existing sendAdminReply code remains exactly the same]
-}
-
 function updateAdminView(category) {
     
     document.querySelectorAll('.admin-tab').forEach(tab => {
@@ -1388,7 +1483,7 @@ function updateAdminView(category) {
         
         if (tab.innerText.trim() === category || 
            (category === 'Vegetarian' && tab.innerText.trim() === 'Veg') ||
-           (category === 'Non Vegetarian' && tab.innerText.trim() === 'Non-Veg')) {
+           (category === 'Nonvegetarian' && tab.innerText.trim() === 'Non-Veg')) {
             tab.classList.add('active');
         }
     });
@@ -1435,18 +1530,10 @@ function updateAdminView(category) {
     }
 }
 
-
-
-
-let currentAdminChatUserId = null;
-
-
 function closeAdminChat() {
     currentAdminChatUserId = null;
     loadAdminChat(); 
 }
-
-
 
 function previewImage(input) {
     const container = document.getElementById('img-preview-container');
@@ -1472,8 +1559,41 @@ function clearPreview() {
     const container = document.getElementById('img-preview-container');
     if (container) container.style.display = 'none';
 }
+function renderOrderCard(order) {
+    const date = new Date(order.created).toLocaleDateString('en-IN', { 
+        day: 'numeric', 
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    const statusClass = order.status.toLowerCase().replace(/\s+/g, '-');
+    
+    // SAFELY locate the items array (whether natively attached or inside PB's expand object)
+    const items = order.order_items || (order.expand && order.expand.order_items_via_order_id) || [];
+    
+    const itemsList = items.map(item => 
+        `<span>${item.quantity}x ${item.item_name}</span>`
+    ).join(', ');
 
-
+    return `
+    <div class="order-card" style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px; animation: fadeUp 0.3s ease;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <div>
+                <div style="font-weight: 800; font-size: 1rem; color: var(--text-main);">Order #${order.id.slice(0, 5)}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">${date}</div>
+            </div>
+            <div class="status-badge status-${statusClass}">${order.status}</div>
+        </div>
+        <div style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 16px; line-height: 1.4; font-weight: 600;">
+            ${itemsList || '<span style="color: var(--text-muted); font-style: italic;">Processing items...</span>'}
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border-color); padding-top: 16px;">
+            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Total Paid</span>
+            <span style="font-weight: 900; color: var(--brand-green); font-size: 1.15rem;">₹${order.total_price}</span>
+        </div>
+    </div>`;
+}
 async function loadOrders() {
     const activeList = document.getElementById('active-orders-list');
     const recentList = document.getElementById('recent-orders-list');
@@ -1495,73 +1615,39 @@ async function loadOrders() {
 }
 
 
-
-function renderOrderCard(order) {
-    const date = new Date(order.created).toLocaleDateString('en-IN', { 
-        day: 'numeric', 
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-    
-    const statusClass = order.status.toLowerCase().replace(/\s+/g, '-');
-    
-    
-    const itemsList = order.order_items.map(item => 
-        `<span>${item.quantity}x ${item.item_name}</span>`
-    ).join(', ');
-
-    return `
-    <div class="order-card" style="animation: fadeUp 0.3s ease;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <div>
-                <div style="font-weight: 800; font-size: 1rem; color: var(--text-main);">Order #${order.id.slice(0, 5)}</div>
-                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">${date}</div>
-            </div>
-            <div class="status-badge status-${statusClass}">${order.status}</div>
-        </div>
-        <div style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 12px; line-height: 1.4;">
-            ${itemsList}
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 10px;">
-            <span style="font-size: 0.8rem; color: var(--text-muted);">Total Paid</span>
-            <span style="font-weight: 800; color: var(--brand-green); font-size: 1.1rem;">₹${order.total_price}</span>
-        </div>
-    </div>`;
-}
-
-
-
-
 async function handleSendOtp() {
-  const inputEl = document.getElementById("auth-input");
+  // FIX: Updated to look for the new 'auth-phone' ID
+  const inputEl = document.getElementById("auth-phone");
   const sendBtn = document.getElementById("send-otp-btn");
+
+  // Safeguard just in case the element hasn't loaded
+  if (!inputEl) {
+      console.error("Phone input element not found!");
+      return;
+  }
 
   const digits = inputEl.value.trim().replace(/\D/g, "");
 
   if (digits.length !== 10 || !/^[6-9]/.test(digits)) {
-    showToast("Enter valid mobile", "error");
+    showToast("Enter a valid 10-digit mobile number", "error");
     return;
   }
 
   const phone = "+91" + digits;
 
-const userIdEl = document.getElementById("user-identifier");
-
-if (userIdEl) {
-  userIdEl.innerText = phone;
-}
+  const userIdEl = document.getElementById("user-identifier");
+  if (userIdEl) {
+    userIdEl.innerText = phone;
+  }
 
   try {
     sendBtn.disabled = true;
     sendBtn.innerText = "Sending...";
 
     if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier =
-        new firebase.auth.RecaptchaVerifier("send-otp-btn", {
-          size: "invisible"
-        });
-
+      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier("send-otp-btn", {
+        size: "invisible"
+      });
       await window.recaptchaVerifier.render();
     }
 
@@ -1580,38 +1666,38 @@ if (userIdEl) {
 
   } catch (e) {
     console.error(e);
-    showToast("OTP failed", "error");
+    showToast("OTP failed to send", "error");
+    
+    // Reset the reCAPTCHA so the user can click "Send OTP" again
+    if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.render().then(function(widgetId) {
+            grecaptcha.reset(widgetId);
+        });
+    }
 
   } finally {
     sendBtn.disabled = false;
-    sendBtn.innerText = "Send OTP";
+    sendBtn.innerText = "Continue";
   }
 }
+function showNameModal() {
+    // FIX: Remove 'active' class to properly hide the auth screen
+    // The inline style was being overridden by CSS !important rules
+    document.getElementById("auth").classList.remove("active");
 
-
-function updateLoggedInUI(phone){
-  document.getElementById("login-section").style.display = "none";
-  document.getElementById("user-section").style.display = "flex";
-  document.getElementById("logout-menu-btn").style.display = "flex";
-  document.getElementById("user-display-name").innerText = phone;
-
-  // --- Stealth Admin Trigger Logic ---
-  const dogIconWrapper = document.getElementById("secret-admin-trigger");
-  
-  if (dogIconWrapper) {
-      if (isAdmin()) {
-          // You are verified by Firebase! Turn on the neon lights.
-          dogIconWrapper.classList.add("admin-shimmer");
-          
-          // THE FIX: Route the click through the Token generator
-          dogIconWrapper.onclick = handleStealthAdminLogin; 
-      } else {
-          dogIconWrapper.classList.remove("admin-shimmer");
-          dogIconWrapper.onclick = null;
-      }
-  }
+    const modal = document.getElementById("name-modal");
+    modal.classList.remove("hidden");
 }
 
+function updateLoggedInUI(phone) {
+    // Optional chaining (?.) prevents the "null" error if the ID is missing[cite: 5]
+    document.getElementById("login-section")?.style.setProperty("display", "none");
+    document.getElementById("user-section")?.style.setProperty("display", "flex");
+    document.getElementById("logout-menu-btn")?.style.setProperty("display", "flex");
+    
+    const userDisplay = document.getElementById("user-display-name");
+    if (userDisplay) userDisplay.innerText = phone;
+}
 async function handleVerifyOtp() {
   if (verifyingOtp) return;
 
@@ -1666,10 +1752,6 @@ async function handleVerifyOtp() {
   }
 }
 
-
-
-const otpInputs = document.querySelectorAll('.otp-digit');
-
 otpInputs.forEach((input, index) => {
     input.addEventListener('input', (e) => {
         if (e.target.value.length === 1 && index < otpInputs.length - 1) {
@@ -1688,7 +1770,6 @@ otpInputs.forEach((input, index) => {
         }
     });
 });
-
 
 otpInputs[0].addEventListener('paste', (e) => {
     e.preventDefault();
@@ -1711,7 +1792,6 @@ otpInputs[0].addEventListener('paste', (e) => {
     }
 });
 
-
 function handleLoginClick() {
 
     if (auth.currentUser) {
@@ -1723,16 +1803,71 @@ function handleLoginClick() {
     toggleMenu();
     switchScreen("auth");
 }
+
+async function handleVegToggle(checkbox) {
+    const isChecked = checkbox.checked;
+
+    // Check for cart conflicts before applying the toggle
+    if (isChecked && cart.length > 0) {
+        const hasNonVeg = cart.some(cartItem => {
+            const menuRecord = publicMenuCache?.find(m => m.id === cartItem.id);
+            return menuRecord && menuRecord.category === 'Nonvegetarian';
+        });
+
+        if (hasNonVeg) {
+            const confirmClear = confirm("Your cart contains Non-Veg items. Turning on Pure Veg mode will remove them. Continue?");
+            if (!confirmClear) {
+                checkbox.checked = false; // Revert the toggle visually
+                return; // Stop execution
+            }
+            
+            // Filter out non-veg items
+            cart = cart.filter(cartItem => {
+                const menuRecord = publicMenuCache?.find(m => m.id === cartItem.id);
+                return !(menuRecord && menuRecord.category === 'Nonvegetarian');
+            });
+            updateCartUI();
+            showToast("Non-Veg items removed from cart", "info");
+        }
+    }
+
+    // Proceed with normal toggle logic
+    localStorage.setItem('prober_veg_only', isChecked);
+    const nonVegBtn = document.getElementById('category-Nonvegetarian');
+    
+    if (nonVegBtn) {
+        nonVegBtn.style.setProperty('display', isChecked ? 'none' : 'flex', 'important');
+    }
+
+    if (isChecked && currentCategory === 'Nonvegetarian') {
+        setMenuCategory('Vegetarian');
+    } else {
+        renderMenu();
+    }
+    renderMealBuilder();
+}
+
+
 document.addEventListener('DOMContentLoaded', async () => {
-    const spinner = document.getElementById('loading-spinner');
-    if (spinner) spinner.style.display = 'flex';
-
     try {
+        // --- 1. RESTORE PERSISTENT STATES ---
+        const isVegOnly = localStorage.getItem('prober_veg_only') === 'true';
+        const vegToggle = document.getElementById('sidebar-veg-toggle');
         
-        let hash = window.location.hash.replace('#', '') || 'home';
-        switchScreen(hash);
+        if (vegToggle) {
+            vegToggle.checked = isVegOnly;
+            handleVegToggle(vegToggle);
+        }
 
-        
+    
+
+        // --- 2. HANDLE ROUTING ---
+        let hash = window.location.hash.replace('#', '') || 'home';
+        if (typeof window.switchScreen === 'function') {
+            window.switchScreen(hash);
+        }
+
+        // --- 3. DATA LOAD (Runs instantly in the background) ---
         Promise.allSettled([
             fetchBuilderData().then(() => {
                 if (typeof renderMenu === 'function') renderMenu();
@@ -1743,18 +1878,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     } catch (err) {
         console.error("STARTUP ERROR:", err);
-        switchScreen('home'); 
-        showToast("Connected in offline/limited mode.", "error"); 
-    } finally {
-        if (spinner) spinner.style.display = 'none';
-    }
+        if (typeof window.switchScreen === 'function') window.switchScreen('home');
+        showToast("Connected in offline/limited mode.", "error");
+    } 
 
-    
+    // --- 4. REALTIME SUBSCRIPTIONS ---
     if (MENU_ITEMS_PUBLIC_READ_ENABLED) {
         pb.collection('menu_items').subscribe('*', (e) => {
-            publicMenuCache = null;
+            publicMenuCache = null; 
         }).catch((err) => {
-            if (!isAdminOnlyError(err)) console.warn("Menu realtime subscription unavailable:", err);
+            if (!isAdminOnlyError(err)) console.warn("Menu subscription unavailable:", err);
         });
     }
 });
@@ -1768,12 +1901,7 @@ function requireLogin() {
     return true;
 }
 
-function showNameModal() {
-  document.getElementById("auth").style.display = "none";
 
-  const modal = document.getElementById("name-modal");
-  modal.classList.remove("hidden");
-}
 
 async function saveCustomerName() {
   const inputEl = document.getElementById("customer-name-input");
@@ -1825,7 +1953,6 @@ async function saveCustomerName() {
   }
 }
 
-
 async function syncUserToPocketBase(user) {
   const phone = user.phoneNumber;
 
@@ -1834,6 +1961,10 @@ async function syncUserToPocketBase(user) {
       .getFirstListItem(`phone="${phone}"`);
 
     window.currentCustomer = existing;
+    
+    // --- ADD THIS LINE HERE ---
+    await syncUserVegPreference(); 
+    
     return existing;
 
   } catch (err) {
@@ -1842,7 +1973,8 @@ async function syncUserToPocketBase(user) {
       name: phone,
       firebase_uid: user.uid,
       last_login: new Date().toISOString(),
-      order_count: 0
+      order_count: 0,
+      veg_only: false // Initialize the field for new users
     });
 
     window.currentCustomer = created;
@@ -1851,7 +1983,8 @@ async function syncUserToPocketBase(user) {
 }
 
 async function handleStealthAdminLogin() {
-    if (pb.authStore.isValid && pb.authStore.isAdmin) {
+    // FIX: In v0.22, 'isAdmin' is replaced by 'isSuperuser'
+    if (pb.authStore.isValid && pb.authStore.isSuperuser) {
         openAdminPanel();
         return;
     }
@@ -1860,8 +1993,8 @@ async function handleStealthAdminLogin() {
     if (!password) return; 
 
     try {
-        // We use a raw 'fetch' to hit the OLD endpoint directly, bypassing the SDK version conflict
-        const response = await fetch(`${pb.baseUrl}/api/admins/auth-with-password`, {
+        // FIX: Point to the new v0.22 superusers collection endpoint
+        const response = await fetch(`${pb.baseUrl}/api/collections/_superusers/auth-with-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1873,8 +2006,8 @@ async function handleStealthAdminLogin() {
         const data = await response.json();
 
         if (response.ok) {
-            // Manually save the token into the SDK's memory
-            pb.authStore.save(data.token, data.admin);
+            // FIX: In v0.22, the user data object is returned under 'record', not 'admin'
+            pb.authStore.save(data.token, data.record);
             showToast("Vault Unlocked.", "success");
             openAdminPanel();
         } else {
@@ -1885,3 +2018,256 @@ async function handleStealthAdminLogin() {
         showToast("Access Denied: Check your password.", "error");
     }
 }
+
+async function syncUserVegPreference() {
+    if (!window.currentCustomer) return;
+
+    // 1. Pull the true preference FROM the database
+    const cloudVeg = window.currentCustomer.veg_only === true;
+    localStorage.setItem('prober_veg_only', cloudVeg);
+
+    // 2. Visually update the toggle switch on the screen
+    const vegToggle = document.getElementById('sidebar-veg-toggle');
+    if (vegToggle) vegToggle.checked = cloudVeg;
+
+    // 3. Force the app to apply the rules (hide buttons, filter menus)
+    handleVegToggle(vegToggle || { checked: cloudVeg });
+}
+
+async function deleteBmiRecord(id) {
+    if (!confirm("Delete this result?")) return;
+    
+    try {
+        await pb.collection('bmi_history').delete(id);
+        showToast("Record deleted", "success");
+        renderBmiHistory(); // Refresh the list
+    } catch (err) {
+        showToast("Failed to delete record", "error");
+    }
+}
+
+function applyVegToggleState() {
+    const isVegOnly = localStorage.getItem('prober_veg_only') === 'true';
+
+    document.querySelectorAll('input[onchange*="handleVegToggle"]').forEach(toggle => {
+        toggle.checked = isVegOnly;
+    });
+
+    const nonVegBtn = document.getElementById('category-Nonvegetarian');
+    // Using setProperty bypasses the !important CSS override
+    if (nonVegBtn) nonVegBtn.style.setProperty('display', isVegOnly ? 'none' : 'flex', 'important');
+
+    if (isVegOnly && currentCategory === 'Nonvegetarian') {
+        setMenuCategory('Vegetarian');
+    }
+}
+
+
+/* =====================================================
+   DETERMINISTIC TOGGLE LOGIC
+===================================================== */
+function toggleMenu() {
+    const menu = document.getElementById('side-menu-panel');
+    const cart = document.getElementById('cart-panel');
+    const overlay = document.getElementById('menu-overlay');
+
+    if (menu.classList.contains('open')) {
+        // If it's already open, DEFINITELY close it
+        menu.classList.remove('open');
+        overlay.classList.add('hidden');
+    } else {
+        // If it's closed, open it (and ensure cart is closed)
+        cart?.classList.remove('open');
+        menu.classList.add('open');
+        overlay.classList.remove('hidden');
+    }
+}
+
+
+function skipNameEntry() {
+    // Hide the modal
+    document.getElementById("name-modal").classList.add("hidden");
+    
+    // Update UI with their phone number (since they didn't provide a name)
+    updateLoggedInUI(window.currentCustomer.name || window.currentCustomer.phone);
+    
+    // Send them to the home screen
+    switchScreen("home");
+    showToast("Welcome to Prober!");
+}
+
+function handleViewMenuClick(btn) {
+    if (btn.disabled) return;
+    
+    // Disable and show loading state
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    
+    // Switch screen with a tiny delay so the user registers the click
+    setTimeout(() => {
+        switchScreen('menu');
+        
+        // Restore button state 1 second later in the background
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }, 1000);
+    }, 150);
+}
+
+
+function openMapPicker() {
+    const mapModal = document.getElementById('map-modal');
+    const overlay = document.getElementById('menu-overlay');
+    
+    // 1. Remove the display:none class
+    mapModal.classList.remove('hidden');
+    overlay.classList.remove('hidden');
+    
+    // 2. Trigger the pop-in animation
+    mapModal.classList.add('open');
+
+    // 3. Initialize map if it doesn't exist yet
+    if (!mapInstance) {
+        mapInstance = L.map('map-picker').setView([currentMapCoords.lat, currentMapCoords.lng], 16);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(mapInstance);
+
+        mapInstance.on('move', () => {
+            const center = mapInstance.getCenter();
+            currentMapCoords = { lat: center.lat, lng: center.lng };
+        });
+    }
+
+    // CRITICAL FIX: Leaflet needs to recalculate its size *after* 
+    // the CSS modal animation finishes (which takes ~300ms).
+    setTimeout(() => {
+        if (mapInstance) {
+            mapInstance.invalidateSize();
+        }
+    }, 350); 
+}
+// Add this function anywhere in app.js
+function locateUserOnMap() {
+    const btn = document.querySelector('.locate-me-btn');
+    const originalIcon = btn.innerHTML;
+    
+    if (!navigator.geolocation) {
+        showToast("Location not supported by browser", "error");
+        return;
+    }
+
+    // Change icon to a loading spinner
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="color: var(--brand-green);"></i>';
+    btn.disabled = true;
+
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            
+            // Update the global map coordinates variable
+            currentMapCoords = { lat, lng };
+            
+            // Smoothly fly the Leaflet map to the new coordinates
+            if (mapInstance) {
+                mapInstance.flyTo([lat, lng], 17, {
+                    animate: true,
+                    duration: 1.5 // 1.5 second animation
+                });
+            }
+            
+            showToast("Location found!", "success");
+            
+            // Restore button state
+            btn.innerHTML = '<i class="fas fa-crosshairs" style="color: var(--brand-green);"></i>'; // Keep it green to show it's active
+            btn.disabled = false;
+        },
+        (err) => {
+            console.warn("Geolocation Error:", err);
+            showToast("Could not get location. Check permissions.", "error");
+            
+            // Restore button state
+            btn.innerHTML = originalIcon;
+            btn.disabled = false;
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+}
+function closeMapPicker() {
+    const mapModal = document.getElementById('map-modal');
+    mapModal.classList.remove('open');
+    document.getElementById('menu-overlay').classList.add('hidden');
+    
+    // Give the fade-out animation time to finish before applying display:none
+    setTimeout(() => {
+        mapModal.classList.add('hidden');
+    }, 300);
+}
+
+async function confirmMapLocation() {
+    // Reverse Geocoding (Optional: Turn Lat/Lng into text)
+    showToast("Location Captured", "success");
+    
+    // Update the address input with coordinates (or coordinates + landmark)
+    const addressField = document.getElementById('checkout-address');
+    if (addressField) {
+        addressField.value = `Pinned: ${currentMapCoords.lat.toFixed(5)}, ${currentMapCoords.lng.toFixed(5)}`;
+        addressField.classList.remove('input-error'); //[cite: 4]
+    }
+    
+    closeMapPicker();
+}
+/* =====================================================
+   SAFE GLOBAL CLICK LISTENER
+===================================================== */
+document.addEventListener('click', (e) => {
+    // FIX 1: If the clicked element was destroyed by a UI re-render, ignore the click.
+    // This stops the cart from closing when adding/removing items.
+    if (!document.body.contains(e.target)) return;
+
+    const sideMenu = document.getElementById('side-menu-panel');
+    const cartPanel = document.getElementById('cart-panel');
+    const themeDropdown = document.getElementById('theme-dropdown');
+    const themeBtn = document.querySelector('.theme-open-btn');
+    const overlay = document.getElementById('menu-overlay');
+    const stickyBar = document.getElementById('sticky-cart-bar');
+
+    // FIX 2: Only close if clicking outside the modals 
+    // AND NOT clicking a toggle button, nav item, or the sticky-cart-bar
+    if (
+        sideMenu && cartPanel &&
+        !sideMenu.contains(e.target) &&
+        !cartPanel.contains(e.target) &&
+        !e.target.closest('.nav-btn') &&
+        !e.target.closest('.header-icon-btn') &&
+        !e.target.closest('#sticky-cart-bar') // <-- This line prevents the auto-hide bug
+    ) {
+        sideMenu.classList.remove('open');
+        cartPanel.classList.remove('open');
+        if (overlay) overlay.classList.add('hidden');
+
+        // Restore sticky bar visibility if the cart is closed and has items
+        if (cart.length > 0 && stickyBar) {
+            stickyBar.classList.remove('hidden');
+        }
+    }
+
+    // Handle floating theme dropdown (if still used anywhere)
+    if (themeDropdown && !themeDropdown.contains(e.target) && (!themeBtn || !themeBtn.contains(e.target))) {
+        themeDropdown.classList.remove('open');
+    }
+});
+
+/* =====================================================
+   CHECKOUT ERROR CLEANUP
+===================================================== */
+document.getElementById("checkout-address")?.addEventListener("input", function() {
+    // Removes the red border and restores the original placeholder
+    this.classList.remove("input-error");
+    this.placeholder = "Flat / House No / Landmark";
+});
+

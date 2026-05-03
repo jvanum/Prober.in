@@ -1,12 +1,11 @@
-/* =========================================
-   ADMIN V2 SYSTEM
-========================================= */
+
 window.addEventListener("load", () => {
     window.scrollTo(0, 0);
 });
 let adminCurrentPage = "orders";
 let currentSupportUserId = null;
-
+let liveItemsData = [];
+let currentLiveCategory = 'All';
 
 function adminAuthBoot(user) {
     if (!user || !isAdmin()) {
@@ -22,16 +21,6 @@ function toggleAdminMenu() {
     document
       .getElementById("admin-flyout")
       .classList.toggle("open");
-}
-/* ---------- OPEN ADMIN ---------- */
-function openAdminPanel() {
-    if (!isAdmin()) {
-        showToast("Access denied", "error");
-        return;
-    }
-
-    window.location.href = "admin.html";
-    adminShowPage("orders");
 }
 
 /* ---------- PAGE NAV ---------- */
@@ -51,18 +40,12 @@ function adminShowPage(page) {
     document.querySelectorAll(".admin-bottom-nav button")
         .forEach(btn => btn.classList.remove("active"));
 
-    const map = {
-        orders: 0,
-        live: 1,
-        manage: 2,
-        support: 3
-    };
+   document.querySelectorAll(".admin-nav-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        adminShowPage(btn.dataset.page);
+    });
+});
 
-    // 4. Add 'active' to the clicked button
-    const btns = document.querySelectorAll(".admin-bottom-nav button");
-    if (btns[map[page]]) {
-        btns[map[page]].classList.add("active");
-    }
     // Toggle the top-bar Add button visibility
     const topAddBtn = document.getElementById('top-add-btn');
     if (topAddBtn) {
@@ -175,10 +158,6 @@ function adminCloseOrder(){
  ?.classList.remove("open");
 }
 
-/* ---------- LIVE TAB (With Dynamic Categories) ---------- */
-let liveItemsData = [];
-let currentLiveCategory = 'All';
-
 async function adminLoadLive() {
     const wrap = document.getElementById("admin-live");
     if (!wrap) return;
@@ -280,18 +259,100 @@ async function adminDeleteMode(){
 
     const items = await pb.collection("menu_items").getFullList({sort:"name"});
 
-    // Render cards exactly like the Orders screen
+    // Render cards with BOTH Edit and Delete buttons
     list.innerHTML = items.map(i=>`
         <div class="admin-card">
             <div>
                 <strong>${i.name}</strong>
                 <p>₹${i.price} • ${i.category}</p>
             </div>
-            <button class="btn-large danger" onclick="adminDeleteItem('${i.id}')">
-                Delete
-            </button>
+            <div style="display: flex; gap: 10px; margin-top: 16px;">
+                <button class="btn-large" style="flex: 1; min-height: 40px; padding: 8px; font-size: 0.9rem; flex-direction: row;" 
+                        onclick="adminOpenEditItem('${i.id}')">
+                    <i class="fas fa-pen" style="font-size: 1rem;"></i> Edit
+                </button>
+                <button class="btn-large danger" style="flex: 1; min-height: 40px; padding: 8px; font-size: 0.9rem; flex-direction: row; margin-top: 0;" 
+                        onclick="adminDeleteItem('${i.id}')">
+                    <i class="fas fa-trash" style="font-size: 1rem;"></i> Delete
+                </button>
+            </div>
         </div>
     `).join("");
+}
+
+
+/* ---------- EDIT ITEM LOGIC ---------- */
+async function adminOpenEditItem(id) {
+    try {
+        // 1. Fetch current data from PocketBase
+        const item = await pb.collection("menu_items").getOne(id);
+        
+        // 2. Populate the form fields
+        document.getElementById('edit-id').value = item.id;
+        document.getElementById('edit-name').value = item.name;
+        document.getElementById('edit-price').value = item.price;
+        document.getElementById('edit-protein').value = item.protein || '';
+        document.getElementById('edit-fat').value = item.fat || '';
+        document.getElementById('edit-category').value = item.category;
+
+        // 3. Bind the submit event dynamically
+        const form = document.getElementById('edit-item-form');
+        form.onsubmit = (e) => adminHandleEditItem(e, item.id);
+
+        // 4. Open drawer
+        document.getElementById('edit-item-drawer').classList.add('open');
+    } catch (err) {
+        showToast("Failed to fetch item details", "error");
+    }
+}
+
+function adminCloseEditItem() {
+    document.getElementById('edit-item-drawer').classList.remove('open');
+}
+
+async function adminHandleEditItem(event, id) {
+    event.preventDefault();
+    
+    // Grab the new values
+    const name = document.getElementById('edit-name').value.trim();
+    const price = parseFloat(document.getElementById('edit-price').value) || 0;
+    const protein = parseFloat(document.getElementById('edit-protein').value) || 0;
+    const fat = parseFloat(document.getElementById('edit-fat').value) || 0;
+    const category = document.getElementById('edit-category').value;
+
+    if (!name || price <= 0) {
+        showToast("Please enter a valid name and price.", "error");
+        return;
+    }
+
+    const btn = event.target.querySelector('button[type="submit"]');
+    if (btn) btn.innerText = "Updating...";
+
+    try {
+        // Send the update to the database
+        await pb.collection('menu_items').update(id, {
+            name: name,
+            price: price,
+            protein: protein,
+            fat: fat,
+            category: category
+        });
+
+        showToast("Item updated successfully!", "success");
+        adminCloseEditItem();
+        
+        // Refresh the Manage grid so changes appear instantly
+        adminDeleteMode(); 
+        
+        // Silently update the live app menu in the background
+        if (typeof renderMenu === "function") renderMenu(); 
+
+    } catch (error) {
+        console.error("Failed to update item:", error);
+        showToast("Update failed.", "error");
+    } finally {
+        if (btn) btn.innerText = "Update Item";
+    }
 }
 
 async function adminDeleteItem(id){
@@ -386,15 +447,10 @@ async function adminLoadSupport(){
    await pb.collection("customers")
    .getFullList({sort:"name"});
 
-  wrap.innerHTML =
+ wrap.innerHTML =
    users.map(u=>`
     <div class="admin-card"
-      onclick="
-       adminOpenSupport(
-        '${u.id}',
-        '${(u.name||u.phone).replace(/'/g,"")}
-       )
-      ">
+      onclick="adminOpenSupport('${u.id}', '${(u.name || u.phone).replace(/["']/g, "")}')">
 
       <strong>${u.name||u.phone}</strong>
       <p>Open chat</p>
@@ -442,7 +498,11 @@ async function adminOpenSupport(id,name){
   </div>
  `).join("");
 
+// Inside adminOpenSupport(), right after: chat.innerHTML = msgs.map(...).join("");
  drawer.classList.add("open");
+
+ // Add this line to force auto-scroll to the bottom:
+ chat.scrollTop = chat.scrollHeight;
 
  }catch(e){
   showToast("Chat failed","error");
@@ -499,9 +559,7 @@ async function sendAdminReply(){
 
 
 
-/* =========================
-   LOGOUT ADMIN FUNCTION
-========================= */
+
 /* =========================
    LOGOUT ADMIN FUNCTION
 ========================= */
@@ -525,4 +583,44 @@ async function adminLogout() {
     localStorage.removeItem("prober_cart");
 
     window.location.href = "index.html";
+}
+
+function fillCurrentLocation() {
+    const btn = document.querySelector('.location-picker-btn');
+    const originalText = btn.innerHTML;
+    
+    // Show loading state
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Locating...`;
+    
+    if (!navigator.geolocation) {
+        showToast("Location not supported by your browser.", "error");
+        btn.innerHTML = originalText;
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            
+            const addressInput = document.getElementById('checkout-address');
+            
+            // Append GPS coordinates if box is empty
+            if(!addressInput.value) {
+                 addressInput.value = `📍 GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            }
+            
+            showToast("Location captured!", "success");
+            
+            // Update button to show success
+            btn.innerHTML = `<i class="fas fa-check-circle" style="color: var(--brand-green);"></i> Location Added`;
+            btn.style.borderColor = "var(--brand-green)";
+            btn.style.background = "rgba(16, 185, 129, 0.05)";
+        },
+        () => {
+            showToast("Unable to fetch location. Check permissions.", "error");
+            btn.innerHTML = originalText;
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
 }
